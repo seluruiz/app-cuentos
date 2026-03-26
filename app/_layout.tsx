@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import Constants from 'expo-constants';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -19,18 +20,23 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  // Encendemos RevenueCat a nivel global nada más abrir la app
   useEffect(() => {
     const initRevenueCatGlobal = async () => {
       try {
         if (Platform.OS !== 'android') return;
-  
+
+        const isExpoGo = Constants.appOwnership === 'expo';
+        if (isExpoGo) {
+          console.log('Expo Go detectado: RevenueCat no se inicializa aquí.');
+          return;
+        }
+
         let appUserId = await AsyncStorage.getItem(STORAGE_KEY_APP_USER_ID);
         if (!appUserId) {
           appUserId = `cd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
           await AsyncStorage.setItem(STORAGE_KEY_APP_USER_ID, appUserId);
         }
-  
+
         try {
           await Purchases.getCustomerInfo();
           console.log('RevenueCat ya estaba disponible.');
@@ -45,7 +51,7 @@ export default function RootLayout() {
         console.error('Error al configurar RevenueCat en RootLayout:', error);
       }
     };
-  
+
     initRevenueCatGlobal();
   }, []);
 

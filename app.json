@@ -2,7 +2,7 @@
   "expo": {
     "name": "Contes Magiques",
     "slug": "app-cuentos",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cuentosdream",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.cuentosdream.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

@@ -4,17 +4,17 @@ import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
 
@@ -27,6 +27,11 @@ const API_BASE_URL = 'https://api.cuentosdream.com';
 export default function VocesScreen() {
   const [customVoices, setCustomVoices] = useState([]);
   const [isPremium, setIsPremium] = useState(false);
+
+  // Estados del Paywall
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [packages, setPackages] = useState([]);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [voiceStep, setVoiceStep] = useState(1);
@@ -41,12 +46,41 @@ export default function VocesScreen() {
   const [permissionResponse, requestPermission] = Audio.usePermissions();
   const [recordingSeconds, setRecordingSeconds] = useState(0);
 
-  // Estados para renombrar voz
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [voiceToRename, setVoiceToRename] = useState(null);
   const [renameValue, setRenameValue] = useState('');
 
   const timerRef = useRef(null);
+
+  const loadOfferings = async () => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current?.availablePackages?.length > 0) {
+        setPackages(offerings.current.availablePackages);
+      }
+    } catch (e) {
+      console.log('Error loading offerings:', e);
+    }
+  };
+
+  const purchasePackage = async (pkg) => {
+    try {
+      setIsPurchasing(true);
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
+  
+      if (customerInfo?.entitlements?.active?.premium) {
+        setIsPremium(true);
+        setShowPaywall(false);
+        Alert.alert('Félicitations ! 🎉', 'Vous êtes maintenant Premium.');
+      }
+    } catch (e) {
+      if (!e?.userCancelled) {
+        Alert.alert('Erreur', "Impossible de finaliser l'achat.");
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -73,6 +107,7 @@ export default function VocesScreen() {
       if (Platform.OS === 'android') {
         const customerInfo = await Purchases.getCustomerInfo();
         setIsPremium(!!customerInfo?.entitlements?.active?.premium);
+        await loadOfferings();
       }
     } catch {}
   };
@@ -166,7 +201,7 @@ export default function VocesScreen() {
 
   const handleOpenVoiceModal = () => {
     if (!isPremium) {
-      Alert.alert('Premium requis', 'Abonnez-vous pour cloner des voix.');
+      setShowPaywall(true); // ABRE EL PAYWALL EN VEZ DE UN SIMPLE ALERT
       return;
     }
     resetVoiceFlow();
@@ -557,6 +592,53 @@ export default function VocesScreen() {
         </View>
       </Modal>
 
+      {/* NUEVO PAYWALL PREMIUM */}
+      <Modal visible={showPaywall} animationType="slide" transparent>
+        <View style={styles.pwOverlay}>
+          <View style={styles.pwContent}>
+            <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
+              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
+            <Text style={styles.pwTitle}>Passez au Premium</Text>
+            <Text style={styles.pwSub}>
+              Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
+            </Text>
+
+            {packages.length > 0 ? (
+              packages.map((pkg) => (
+                <TouchableOpacity
+                  key={pkg.identifier}
+                  style={styles.pwBtnPremium}
+                  onPress={() => purchasePackage(pkg)}
+                  disabled={isPurchasing}
+                >
+                  {isPurchasing ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.pwBtnPremiumTitle}>
+                         {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
+                      </Text>
+                      <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={{ marginTop: 20, alignItems: 'center' }}>
+                <ActivityIndicator color="#FCD34D" size="large" />
+                <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
+                <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -614,7 +696,6 @@ const styles = StyleSheet.create({
   previewButton: { backgroundColor: '#334155', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 16, width: '100%', alignItems: 'center', marginTop: 20 },
   previewButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   
-  // Estilos del modal de Renombrar
   renameOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   renameContent: { backgroundColor: '#1E293B', width: '100%', borderRadius: 24, padding: 25, borderWidth: 1, borderColor: '#334155' },
   renameTitle: { color: '#F8FAFC', fontSize: 20, fontWeight: '800', marginBottom: 8 },
@@ -625,4 +706,14 @@ const styles = StyleSheet.create({
   renameCancelText: { color: '#94A3B8', fontWeight: '700', fontSize: 15 },
   renameSaveBtn: { backgroundColor: '#8B5CF6', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
   renameSaveText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
+
+  /* ESTILOS DEL NUEVO PAYWALL */
+  pwOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.95)', justifyContent: 'center', padding: 20 },
+  pwContent: { backgroundColor: '#1E293B', borderRadius: 32, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: '#8B5CF6', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  pwClose: { position: 'absolute', top: 20, right: 20, width: 32, height: 32, backgroundColor: '#334155', borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  pwTitle: { color: '#FFF', fontSize: 26, fontWeight: '900', textAlign: 'center' },
+  pwSub: { color: '#CBD5E1', textAlign: 'center', marginVertical: 20, lineHeight: 24, fontSize: 15 },
+  pwBtnPremium: { backgroundColor: '#8B5CF6', width: '100%', padding: 20, borderRadius: 20, alignItems: 'center', marginBottom: 12, shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+  pwBtnPremiumTitle: { color: '#FFF', fontWeight: '900', fontSize: 18 },
+  pwBtnPremiumPrice: { color: '#E2E8F0', marginTop: 4, fontSize: 14, fontWeight: '600' },
 });

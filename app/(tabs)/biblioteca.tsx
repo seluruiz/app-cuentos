@@ -35,10 +35,8 @@ const STORAGE_KEYS = {
 };
 
 const API_BASE_URL = 'https://api.cuentosdream.com';
-const REVENUECAT_API_KEY = 'goog_AFLbHJIDUEYUXKCHzsdoWuabRCK';
 
 export default function BibliotecaScreen() {
-  // Refs para mantener la referencia viva en los callbacks
   const voiceSoundRef = useRef(null);
   const musicSoundRef = useRef(null);
 
@@ -65,6 +63,17 @@ export default function BibliotecaScreen() {
   const [selectedVoiceId, setSelectedVoiceId] = useState(null);
   const [activeStoryIdPlaying, setActiveStoryIdPlaying] = useState(null);
 
+  const loadOfferings = async () => {
+    try {
+      const offerings = await Purchases.getOfferings();
+      if (offerings.current?.availablePackages?.length > 0) {
+        setPackages(offerings.current.availablePackages);
+      }
+    } catch (e) {
+      console.log('Error loading offerings:', e);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -86,24 +95,20 @@ export default function BibliotecaScreen() {
     try {
       const storedAppUserId = await AsyncStorage.getItem(STORAGE_KEYS.APP_USER_ID);
       setAppUserId(storedAppUserId);
-
+  
       const libraryRaw = await AsyncStorage.getItem(STORAGE_KEYS.LIBRARY);
       if (libraryRaw) setLibrary(JSON.parse(libraryRaw));
-
+  
       const savedVoices = await AsyncStorage.getItem(STORAGE_KEYS.CUSTOM_VOICES);
       if (savedVoices) setCustomVoices(JSON.parse(savedVoices));
-
+  
       if (Platform.OS === 'android' && storedAppUserId) {
         const customerInfo = await Purchases.getCustomerInfo();
         const premium = !!customerInfo?.entitlements?.active?.premium;
         setIsPremium(premium);
-
-        const offerings = await Purchases.getOfferings();
-        if (offerings.current?.availablePackages?.length > 0) {
-          setPackages(offerings.current.availablePackages);
-        }
+        await loadOfferings();
       }
-    } catch {}
+    } catch (e) {}
   };
 
   const cleanupAudio = async () => {
@@ -139,24 +144,6 @@ export default function BibliotecaScreen() {
       }
     } catch (e) {
       if (!e?.userCancelled) Alert.alert('Erreur', "Impossible de finaliser l'achat.");
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
-  const restorePurchases = async () => {
-    try {
-      setIsPurchasing(true);
-      const customerInfo = await Purchases.restorePurchases();
-      if (customerInfo?.entitlements?.active?.premium) {
-        setIsPremium(true);
-        setShowPaywall(false);
-        Alert.alert('Succès', 'Vos achats ont été restaurés.');
-      } else {
-        Alert.alert('Oups', 'Aucun achat Premium trouvé sur ce compte.');
-      }
-    } catch {
-      Alert.alert('Erreur', 'Impossible de restaurer les achats.');
     } finally {
       setIsPurchasing(false);
     }
@@ -236,11 +223,7 @@ export default function BibliotecaScreen() {
       try {
         const { sound: bg } = await Audio.Sound.createAsync(
           require('../../assets/1675_Sentimental_Wedding_Piano_60sec.wav'),
-          {
-            shouldPlay: true,
-            isLooping: true,
-            volume: 0.12,
-          }
+          { shouldPlay: true, isLooping: true, volume: 0.12 }
         );
         setMusicSound(bg);
         musicSoundRef.current = bg;
@@ -559,42 +542,44 @@ export default function BibliotecaScreen() {
         <View style={styles.pwOverlay}>
           <View style={styles.pwContent}>
             <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
-              <Text style={{ color: '#FFF' }}>✕</Text>
+              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
             </TouchableOpacity>
-            <Text style={{ fontSize: 50 }}>💖</Text>
-            <Text style={styles.pwTitle}>Libérez la magie</Text>
-            <Text style={styles.pwSub}>Créez des histoires illimitées avec votre propre voix.</Text>
+
+            <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
+            <Text style={styles.pwTitle}>Passez au Premium</Text>
+            <Text style={styles.pwSub}>
+              Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
+            </Text>
 
             {packages.length > 0 ? (
               packages.map((pkg) => (
                 <TouchableOpacity
                   key={pkg.identifier}
-                  style={styles.pwBtn}
+                  style={styles.pwBtnPremium}
                   onPress={() => purchasePackage(pkg)}
                   disabled={isPurchasing}
                 >
                   {isPurchasing ? (
-                    <ActivityIndicator color="#0F172A" />
+                    <ActivityIndicator color="#FFF" />
                   ) : (
                     <>
-                      <Text style={{ color: '#0F172A', fontWeight: '900' }}>
-                        {pkg.packageType === 'MONTH' ? '🎁 Essai gratuit' : 'Plan Annuel'}
+                      <Text style={styles.pwBtnPremiumTitle}>
+                        {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
                       </Text>
-                      <Text style={{ color: '#78350F' }}>{pkg.product.priceString}</Text>
+                      <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
                     </>
                   )}
                 </TouchableOpacity>
               ))
             ) : (
-              <View style={{ marginTop: 10, alignItems: 'center' }}>
-                <ActivityIndicator color="#FCD34D" />
-                <Text style={{ color: '#94A3B8', marginTop: 10 }}>Chargement des offres...</Text>
+              <View style={{ marginTop: 20, alignItems: 'center' }}>
+                <ActivityIndicator color="#FCD34D" size="large" />
+                <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
+                <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
+                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
+                </TouchableOpacity>
               </View>
             )}
-
-            <TouchableOpacity onPress={restorePurchases} style={{ marginTop: 12 }}>
-              <Text style={{ color: '#94A3B8', textDecorationLine: 'underline' }}>Restaurer mes achats</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -654,10 +639,14 @@ const styles = StyleSheet.create({
   speedBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#334155', borderRadius: 12, marginTop: 8, marginBottom: 25 },
   speedBtnText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   modalText: { color: '#F8FAFC', fontSize: 17, lineHeight: 28 },
-  pwOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 25 },
-  pwContent: { backgroundColor: '#1E293B', borderRadius: 30, padding: 30, alignItems: 'center' },
-  pwClose: { position: 'absolute', top: 15, right: 15 },
-  pwTitle: { color: '#FCD34D', fontSize: 24, fontWeight: '900', marginTop: 15 },
-  pwSub: { color: '#CBD5E1', textAlign: 'center', marginVertical: 15 },
-  pwBtn: { backgroundColor: '#FCD34D', width: '100%', padding: 18, borderRadius: 18, alignItems: 'center', marginBottom: 10 },
+
+  /* ESTILOS DEL NUEVO PAYWALL */
+  pwOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.95)', justifyContent: 'center', padding: 20 },
+  pwContent: { backgroundColor: '#1E293B', borderRadius: 32, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: '#8B5CF6', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  pwClose: { position: 'absolute', top: 20, right: 20, width: 32, height: 32, backgroundColor: '#334155', borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 10 },
+  pwTitle: { color: '#FFF', fontSize: 26, fontWeight: '900', textAlign: 'center' },
+  pwSub: { color: '#CBD5E1', textAlign: 'center', marginVertical: 20, lineHeight: 24, fontSize: 15 },
+  pwBtnPremium: { backgroundColor: '#8B5CF6', width: '100%', padding: 20, borderRadius: 20, alignItems: 'center', marginBottom: 12, shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+  pwBtnPremiumTitle: { color: '#FFF', fontWeight: '900', fontSize: 18 },
+  pwBtnPremiumPrice: { color: '#E2E8F0', marginTop: 4, fontSize: 14, fontWeight: '600' },
 });

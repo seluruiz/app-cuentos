@@ -322,6 +322,8 @@ export default function VocesScreen() {
     setIsUploadingVoice(true);
     try {
       const rcUserId = await AsyncStorage.getItem('@app_user_id_v1');
+      if (!rcUserId) throw new Error("ID Utilisateur introuvable.");
+
       const fileExt = recordedUri.split('.').pop() || 'm4a';
       const mimeType =
         fileExt === 'm4a' ? 'audio/m4a' : fileExt === 'mp4' ? 'audio/mp4' : 'audio/wav';
@@ -334,6 +336,7 @@ export default function VocesScreen() {
         type: mimeType,
       });
 
+      // ACTUALIZADO: Forzamos el envío del ID en los Headers
       const response = await fetch(`${API_BASE_URL}/api/voice/clone`, {
         method: 'POST',
         headers: {
@@ -342,15 +345,13 @@ export default function VocesScreen() {
         body: formData,
       });
 
-      // Leer el texto crudo primero para evitar el error de JSON
       const textResponse = await response.text();
       let data;
       
       try {
         data = JSON.parse(textResponse);
       } catch (parseError) {
-        // Si no es JSON, tiramos un error con el código HTTP exacto
-        throw new Error(`Erreur réseau ou fichier trop lourd (Code: ${response.status}). Vérifiez votre connexion.`);
+        throw new Error(`Erreur réseau (Code: ${response.status}). Vérifiez votre connexion.`);
       }
 
       if (!response.ok) throw new Error(data?.error || `Erreur serveur: ${response.status}`);

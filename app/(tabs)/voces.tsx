@@ -24,6 +24,13 @@ const STORAGE_KEYS = {
 
 const API_BASE_URL = 'https://api.cuentosdream.com';
 
+const UPLOAD_MESSAGES = [
+  "Envoi de votre voix au studio 📡...",
+  "Analyse de l'intonation 🔍...",
+  "Création de votre clone magique ✨...",
+  "Encore quelques secondes ⏳...",
+];
+
 export default function VocesScreen() {
   const [customVoices, setCustomVoices] = useState([]);
   const [isPremium, setIsPremium] = useState(false);
@@ -43,6 +50,7 @@ export default function VocesScreen() {
   const [previewSound, setPreviewSound] = useState(null);
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState(UPLOAD_MESSAGES[0]);
   const [permissionResponse, requestPermission] = Audio.usePermissions();
   const [recordingSeconds, setRecordingSeconds] = useState(0);
 
@@ -97,6 +105,20 @@ export default function VocesScreen() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  // Efecto para los mensajes dinámicos de carga
+  useEffect(() => {
+    let interval;
+    if (isUploadingVoice) {
+      let i = 0;
+      setUploadMessage(UPLOAD_MESSAGES[0]);
+      interval = setInterval(() => {
+        i = (i + 1) % UPLOAD_MESSAGES.length;
+        setUploadMessage(UPLOAD_MESSAGES[i]);
+      }, 2500);
+    }
+    return () => clearInterval(interval);
+  }, [isUploadingVoice]);
 
   const loadData = async () => {
     try {
@@ -201,7 +223,7 @@ export default function VocesScreen() {
 
   const handleOpenVoiceModal = () => {
     if (!isPremium) {
-      setShowPaywall(true); // ABRE EL PAYWALL EN VEZ DE UN SIMPLE ALERT
+      setShowPaywall(true); 
       return;
     }
     resetVoiceFlow();
@@ -320,7 +342,17 @@ export default function VocesScreen() {
         body: formData,
       });
 
-      const data = await response.json();
+      // Leer el texto crudo primero para evitar el error de JSON
+      const textResponse = await response.text();
+      let data;
+      
+      try {
+        data = JSON.parse(textResponse);
+      } catch (parseError) {
+        // Si no es JSON, tiramos un error con el código HTTP exacto
+        throw new Error(`Erreur réseau ou fichier trop lourd (Code: ${response.status}). Vérifiez votre connexion.`);
+      }
+
       if (!response.ok) throw new Error(data?.error || `Erreur serveur: ${response.status}`);
 
       if (data.success && data.voiceId) {
@@ -541,13 +573,22 @@ export default function VocesScreen() {
 
               <View style={{ flex: 1 }} />
 
-              <TouchableOpacity 
-                style={[styles.modalBtn, { width: '100%', backgroundColor: '#10B981', opacity: isUploadingVoice ? 0.7 : 1 }]} 
-                onPress={submitVoiceToServer} 
-                disabled={isUploadingVoice}
-              >
-                {isUploadingVoice ? <ActivityIndicator color="#FFF" /> : <Text style={styles.modalBtnText}>✨ Générer ma voix magique</Text>}
-              </TouchableOpacity>
+              {/* AQUÍ ESTÁ EL REPRODUCTOR VISUAL DE CARGA Y EL BOTÓN ARREGLADO */}
+              <View style={styles.uploadActionContainer}>
+                {isUploadingVoice ? (
+                  <View style={styles.audioLoadingContainer}>
+                    <ActivityIndicator color="#10B981" size="large" />
+                    <Text style={styles.audioLoadingText}>{uploadMessage}</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={[styles.modalBtn, { width: '100%', backgroundColor: '#10B981' }]} 
+                    onPress={submitVoiceToServer} 
+                  >
+                    <Text style={styles.modalBtnText}>✨ Générer ma voix magique</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           )}
         </View>
@@ -669,7 +710,9 @@ const styles = StyleSheet.create({
   voiceActions: { flexDirection: 'row', gap: 8 },
   smallActionBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A', borderWidth: 1, borderColor: '#334155' },
   smallActionText: { fontSize: 16 },
-  voiceModalContainer: { flex: 1, backgroundColor: '#0F172A', padding: 24, paddingTop: 40 },
+  
+  // ARREGLADO PADDING BOTTOM PARA QUE EL BOTÓN NO SE CORTE
+  voiceModalContainer: { flex: 1, backgroundColor: '#0F172A', padding: 24, paddingTop: 40, paddingBottom: 50 },
   closeIconBtnCircle: { backgroundColor: '#334155', width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
   closeIconText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   voiceStepContent: { flex: 1, alignItems: 'center' },
@@ -696,6 +739,11 @@ const styles = StyleSheet.create({
   previewButton: { backgroundColor: '#334155', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 16, width: '100%', alignItems: 'center', marginTop: 20 },
   previewButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
   
+  // NUEVO CONTENEDOR PARA SUBIR EL BOTÓN DE GENERAR
+  uploadActionContainer: { width: '100%', paddingBottom: 10, marginTop: 20 },
+  audioLoadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)', width: '100%' },
+  audioLoadingText: { color: '#10B981', fontWeight: '800', fontSize: 15, marginTop: 12, textAlign: 'center' },
+
   renameOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   renameContent: { backgroundColor: '#1E293B', width: '100%', borderRadius: 24, padding: 25, borderWidth: 1, borderColor: '#334155' },
   renameTitle: { color: '#F8FAFC', fontSize: 20, fontWeight: '800', marginBottom: 8 },

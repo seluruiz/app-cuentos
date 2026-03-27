@@ -417,7 +417,7 @@ export default function HomeScreen() {
       try {
         const { sound: bg } = await Audio.Sound.createAsync(
           require('../../assets/1675_Sentimental_Wedding_Piano_60sec.wav'),
-          { shouldPlay: true, isLooping: true, volume: 0.12 }
+          { shouldPlay: true, isLooping: true, volume: 0.08 }
         );
         setMusicSound(bg);
         musicSoundRef.current = bg;
@@ -459,7 +459,10 @@ export default function HomeScreen() {
 
         const response = await fetch(`${API_BASE_URL}/api/story/tts`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-rc-user-id': appUserId 
+          },
           body: JSON.stringify(payload),
         });
 

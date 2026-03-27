@@ -300,7 +300,10 @@ export default function BibliotecaScreen() {
 
         const response = await fetch(`${API_BASE_URL}/api/story/tts`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-rc-user-id': appUserId 
+          },
           body: JSON.stringify(payload),
         });
 

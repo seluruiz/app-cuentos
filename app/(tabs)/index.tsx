@@ -98,7 +98,6 @@ export default function HomeScreen() {
   const [selectedVoiceId, setSelectedVoiceId] = useState(null);
   const [customVoices, setCustomVoices] = useState([]);
   
-  // Estado para controlar si ya usó su historia gratis
   const [freeStoryUsed, setFreeStoryUsed] = useState(false);
 
   const loadOfferings = async () => {
@@ -192,13 +191,16 @@ export default function HomeScreen() {
   };
 
   const loadOrCreateAppUserId = async () => {
-    let id = await AsyncStorage.getItem(STORAGE_KEYS.APP_USER_ID);
-    if (!id) {
-      id = `cd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
-      await AsyncStorage.setItem(STORAGE_KEYS.APP_USER_ID, id);
+    try {
+      const rcId = await Purchases.getAppUserID();
+      setAppUserId(rcId);
+      await AsyncStorage.setItem(STORAGE_KEYS.APP_USER_ID, rcId);
+      return rcId;
+    } catch (error) {
+      const id = await AsyncStorage.getItem(STORAGE_KEYS.APP_USER_ID);
+      setAppUserId(id);
+      return id;
     }
-    setAppUserId(id);
-    return id;
   };
 
   const initRevenueCat = async () => {
@@ -230,7 +232,6 @@ export default function HomeScreen() {
         setSelectedVoiceId(v || null);
       }
 
-      // Leemos si ya usó la historia gratuita
       const usedRaw = await AsyncStorage.getItem('@free_story_used');
       if (usedRaw === 'true') setFreeStoryUsed(true);
 
@@ -319,7 +320,10 @@ export default function HomeScreen() {
 
       const response = await fetch(`${API_BASE_URL}/api/story/generate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-rc-user-id': appUserId
+        },
         body: JSON.stringify({
           childName: nombre.trim(),
           childAge: edad.trim(),
@@ -371,7 +375,6 @@ export default function HomeScreen() {
       const updatedLibrary = [story, ...library];
       await persistLibrary(updatedLibrary);
 
-      // Si no es premium, bloqueamos la oferta gratuita visualmente
       if (!isPremium) {
         setFreeStoryUsed(true);
         await AsyncStorage.setItem('@free_story_used', 'true');
@@ -627,11 +630,13 @@ export default function HomeScreen() {
           <Text style={styles.label}>VOTRE IDÉE D'HISTOIRE</Text>
           <View style={[styles.inputContainer, styles.storyInputContainer]}>
             <Text style={styles.inputIcon}>✍️</Text>
-            <TextInput style={[styles.input, styles.storyInput]} placeholder="Décrivez l'histoire..." placeholderTextColor="#64748B" multiline value={historia} onChangeText={setHistoria} textAlignVertical="top" maxLength={600} />
+            {/* NUEVO PLACEHOLDER INSPIRADOR */}
+            <TextInput style={[styles.input, styles.storyInput]} placeholder="Ex: Lucas a peur de l'eau, mais Spiderman l'aide à nager..." placeholderTextColor="#64748B" multiline value={historia} onChangeText={setHistoria} textAlignVertical="top" maxLength={600} />
           </View>
 
+          {/* NUEVA FRASE DE AYUDA DEBAJO DE LA CAJA */}
           <Text style={styles.storyHint}>
-            Ajoutez ses héros préférés, une émotion douce ou une petite aventure.
+            Soyez créatif ! Plus vous donnez de détails, meilleur sera le conte. Ajoutez ses héros préférés de dessins animés ou de films, une émotion douce ou une petite aventure.
           </Text>
 
           <View style={styles.switchRow}>

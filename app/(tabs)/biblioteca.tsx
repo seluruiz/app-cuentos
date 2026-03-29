@@ -93,8 +93,9 @@ export default function BibliotecaScreen() {
 
   const loadData = async () => {
     try {
-      const storedAppUserId = await AsyncStorage.getItem(STORAGE_KEYS.APP_USER_ID);
-      setAppUserId(storedAppUserId);
+      // 1. Obtenemos el ID directamente de RevenueCat
+      const rcId = await Purchases.getAppUserID();
+      setAppUserId(rcId);
   
       const libraryRaw = await AsyncStorage.getItem(STORAGE_KEYS.LIBRARY);
       if (libraryRaw) setLibrary(JSON.parse(libraryRaw));
@@ -102,7 +103,8 @@ export default function BibliotecaScreen() {
       const savedVoices = await AsyncStorage.getItem(STORAGE_KEYS.CUSTOM_VOICES);
       if (savedVoices) setCustomVoices(JSON.parse(savedVoices));
   
-      if (Platform.OS === 'android' && storedAppUserId) {
+      // Usamos rcId para la comprobación
+      if (Platform.OS === 'android' && rcId) {
         const customerInfo = await Purchases.getCustomerInfo();
         const premium = !!customerInfo?.entitlements?.active?.premium;
         setIsPremium(premium);

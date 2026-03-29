@@ -336,7 +336,6 @@ export default function VocesScreen() {
         type: mimeType,
       });
 
-      // ACTUALIZADO: Forzamos el envío del ID en los Headers
       const response = await fetch(`${API_BASE_URL}/api/voice/clone`, {
         method: 'POST',
         headers: {
@@ -513,16 +512,14 @@ export default function VocesScreen() {
             <View style={styles.voiceStepContent}>
               <Text style={styles.voiceModalEmoji}>🎙️</Text>
               <Text style={styles.voiceModalTitle}>Studio de voix</Text>
-              <Text style={styles.voiceModalSubtitle}>
-                Parlez lentement, seul(e), dans un endroit calme. Évitez la musique, le vent ou les interruptions.
-              </Text>
-              <Text style={styles.voiceModalWarning}>
-                Utilisez uniquement votre propre voix ou une voix pour laquelle vous avez une autorisation claire.
+              
+              <Text style={styles.scriptWarning}>
+                🔴 Lisez lentement, à voix basse et avec beaucoup de tendresse (comme si vous lisiez un vrai conte), tout en bordant votre enfant dans son lit.
               </Text>
 
               <View style={styles.scriptBox}>
                 <Text style={styles.scriptText}>
-                  "Il était une fois, dans un royaume lointain au-delà des nuages, un petit explorateur courageux qui adorait écouter des histoires magiques avant de s'endormir."
+                  "Il était une fois... dans une forêt magique et secrète, un petit renard profondément endormi. Soudain... un bruit très doux le réveilla ! « Qui est là ? » murmura-t-il doucement, en regardant autour de lui. C'était juste le vent... qui chantait une merveilleuse berceuse sous les étoiles brillantes. Rassuré, le petit renard ferma les yeux... respira très calmement... et s'endormit paisiblement dans son nid douillet. Chut... la nuit est là... fais de beaux rêves..."
                 </Text>
               </View>
 
@@ -538,12 +535,12 @@ export default function VocesScreen() {
                   {isRecording ? "Enregistrement en cours..." : 'Appuyez pour parler'}
                 </Text>
                 
-                <Text style={styles.recommendationText}>Idéal : 20-40 secondes</Text>
+                <Text style={styles.recommendationText}>Idéal : 30-45 secondes</Text>
 
-                {recordingSeconds >= 20 && recordingSeconds < 40 && (
+                {recordingSeconds >= 25 && recordingSeconds < 45 && (
                   <Text style={styles.perfectText}>Parfait, vous pouvez arrêter l’enregistrement.</Text>
                 )}
-                {recordingSeconds >= 40 && (
+                {recordingSeconds >= 45 && (
                   <Text style={styles.warningText}>Durée suffisante, vous pouvez arrêter l'enregistrement.</Text>
                 )}
               </View>
@@ -574,7 +571,6 @@ export default function VocesScreen() {
 
               <View style={{ flex: 1 }} />
 
-              {/* AQUÍ ESTÁ EL REPRODUCTOR VISUAL DE CARGA Y EL BOTÓN ARREGLADO */}
               <View style={styles.uploadActionContainer}>
                 {isUploadingVoice ? (
                   <View style={styles.audioLoadingContainer}>
@@ -712,7 +708,6 @@ const styles = StyleSheet.create({
   smallActionBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A', borderWidth: 1, borderColor: '#334155' },
   smallActionText: { fontSize: 16 },
   
-  // ARREGLADO PADDING BOTTOM PARA QUE EL BOTÓN NO SE CORTE
   voiceModalContainer: { flex: 1, backgroundColor: '#0F172A', padding: 24, paddingTop: 40, paddingBottom: 50 },
   closeIconBtnCircle: { backgroundColor: '#334155', width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
   closeIconText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
@@ -721,6 +716,10 @@ const styles = StyleSheet.create({
   voiceModalTitle: { color: '#FCD34D', fontSize: 26, fontWeight: '900', textAlign: 'center', marginBottom: 10 },
   voiceModalSubtitle: { color: '#CBD5E1', fontSize: 15, textAlign: 'center', marginBottom: 10, lineHeight: 22 },
   voiceModalWarning: { color: '#94A3B8', fontSize: 12, textAlign: 'center', marginBottom: 25, fontStyle: 'italic' },
+  
+  // NUEVO ESTILO PARA EL AVISO EN ROJO
+  scriptWarning: { color: '#EF4444', fontSize: 14, fontWeight: '800', textAlign: 'center', marginBottom: 15, lineHeight: 22, paddingHorizontal: 10 },
+  
   inputContainer: { backgroundColor: '#1E293B', borderRadius: 16, borderWidth: 1, borderColor: '#334155', paddingHorizontal: 15 },
   input: { color: '#FFF', paddingVertical: 15, fontSize: 16 },
   legalBox: { backgroundColor: '#1E293B', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#334155', marginBottom: 20, width: '100%' },
@@ -730,7 +729,7 @@ const styles = StyleSheet.create({
   modalBtn: { backgroundColor: '#8B5CF6', borderRadius: 18, minHeight: 60, alignItems: 'center', justifyContent: 'center' },
   modalBtnText: { color: '#FFF', fontWeight: '800', fontSize: 17 },
   scriptBox: { backgroundColor: '#1E293B', padding: 25, borderRadius: 20, borderWidth: 1, borderColor: '#8B5CF6', width: '100%' },
-  scriptText: { color: '#F8FAFC', fontSize: 18, lineHeight: 30, textAlign: 'center', fontStyle: 'italic', fontWeight: '500' },
+  scriptText: { color: '#F8FAFC', fontSize: 16, lineHeight: 28, textAlign: 'center', fontStyle: 'italic', fontWeight: '500' },
   recordCircle: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#334155', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#0F172A' },
   recordingActive: { backgroundColor: '#EF4444', borderColor: '#FCA5A5', transform: [{ scale: 1.1 }] },
   recordTimer: { color: '#FCD34D', fontSize: 24, fontWeight: '900', marginTop: 16 },
@@ -739,12 +738,9 @@ const styles = StyleSheet.create({
   warningText: { color: '#F59E0B', marginTop: 8, fontWeight: '700' },
   previewButton: { backgroundColor: '#334155', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 16, width: '100%', alignItems: 'center', marginTop: 20 },
   previewButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-  
-  // NUEVO CONTENEDOR PARA SUBIR EL BOTÓN DE GENERAR
   uploadActionContainer: { width: '100%', paddingBottom: 10, marginTop: 20 },
   audioLoadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)', width: '100%' },
   audioLoadingText: { color: '#10B981', fontWeight: '800', fontSize: 15, marginTop: 12, textAlign: 'center' },
-
   renameOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   renameContent: { backgroundColor: '#1E293B', width: '100%', borderRadius: 24, padding: 25, borderWidth: 1, borderColor: '#334155' },
   renameTitle: { color: '#F8FAFC', fontSize: 20, fontWeight: '800', marginBottom: 8 },
@@ -755,8 +751,6 @@ const styles = StyleSheet.create({
   renameCancelText: { color: '#94A3B8', fontWeight: '700', fontSize: 15 },
   renameSaveBtn: { backgroundColor: '#8B5CF6', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 12 },
   renameSaveText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
-
-  /* ESTILOS DEL NUEVO PAYWALL */
   pwOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.95)', justifyContent: 'center', padding: 20 },
   pwContent: { backgroundColor: '#1E293B', borderRadius: 32, padding: 30, alignItems: 'center', borderWidth: 1, borderColor: '#8B5CF6', shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
   pwClose: { position: 'absolute', top: 20, right: 20, width: 32, height: 32, backgroundColor: '#334155', borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 10 },

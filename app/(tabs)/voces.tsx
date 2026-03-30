@@ -147,13 +147,14 @@ export default function VocesScreen() {
         style: 'destructive',
         onPress: async () => {
           try {
-            const rcUserId = await AsyncStorage.getItem('@app_user_id_v1');
+            // MODIFICADO: Pedimos el ID oficial a RevenueCat
+            const rcUserId = await Purchases.getAppUserID();
             
             const response = await fetch(`${API_BASE_URL}/api/voice/${voiceId}`, {
               method: 'DELETE',
               headers: {
                  'Content-Type': 'application/json',
-                 'x-rc-user-id': rcUserId
+                 'x-rc-user-id': rcUserId // <- Ahora enviamos el ID correcto
               }
             });
 
@@ -321,7 +322,8 @@ export default function VocesScreen() {
 
     setIsUploadingVoice(true);
     try {
-      const rcUserId = await AsyncStorage.getItem('@app_user_id_v1');
+      // MODIFICADO: Pedimos el ID oficial a RevenueCat para sincronizar SQLite
+      const rcUserId = await Purchases.getAppUserID();
       if (!rcUserId) throw new Error("ID Utilisateur introuvable.");
 
       const fileExt = recordedUri.split('.').pop() || 'm4a';
@@ -339,7 +341,7 @@ export default function VocesScreen() {
       const response = await fetch(`${API_BASE_URL}/api/voice/clone`, {
         method: 'POST',
         headers: {
-          'x-rc-user-id': rcUserId,
+          'x-rc-user-id': rcUserId, // <- Ahora enviamos el ID correcto para crear la voz en DB
         },
         body: formData,
       });
@@ -464,7 +466,7 @@ export default function VocesScreen() {
               <Text style={styles.voiceModalEmoji}>👤</Text>
               <Text style={styles.voiceModalTitle}>Qui êtes-vous ?</Text>
               <Text style={styles.voiceModalSubtitle}>
-                Donnez un nom à cette voix pour la retrouver facilement (ex : Papa, Maman, Mamie...)
+                Donnez un nom à cette voix pour la retrouver fácilmente (ex : Papa, Maman, Mamie...)
               </Text>
 
               <View style={[styles.inputContainer, { width: '100%', marginBottom: 30 }]}>

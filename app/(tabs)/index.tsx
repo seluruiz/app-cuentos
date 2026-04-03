@@ -24,6 +24,7 @@ import {
   View,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -542,250 +543,257 @@ export default function HomeScreen() {
 
   if (loadingApp) {
     return (
-      <View style={styles.loaderScreen}>
-        <ActivityIndicator size="large" color="#FCD34D" />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loaderScreen}>
+          <ActivityIndicator size="large" color="#FCD34D" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.heroContainer}>
-          <Text style={styles.heroTitle}>Votre voix.</Text>
-          <Text style={styles.heroTitle}>Son histoire.</Text>
-          <Text style={[styles.heroTitle, { color: '#FCD34D' }]}>Son sommeil. 🌙</Text>
-          <Text style={styles.heroSubtext}>
-            Créez une histoire unique en 1 minute, avec une voix magique ou la vôtre.
-          </Text>
-        </View>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.heroContainer}>
+            <Text style={styles.heroTitle}>Votre voix.</Text>
+            <Text style={styles.heroTitle}>Son histoire.</Text>
+            <Text style={[styles.heroTitle, { color: '#FCD34D' }]}>Son sommeil. 🌙</Text>
+            <Text style={styles.heroSubtext}>
+              Créez une histoire unique en 1 minute, avec une voix magique ou la vôtre.
+            </Text>
+          </View>
 
-        <View style={styles.voiceSelectorContainer}>
-          <Text style={styles.voiceSelectorLabel}>QUI VA RACONTER L'HISTOIRE ?</Text>
+          <View style={styles.voiceSelectorContainer}>
+            <Text style={styles.voiceSelectorLabel}>QUI VA RACONTER L'HISTOIRE ?</Text>
 
-          <View style={styles.voiceOptionsWrapper}>
-            <TouchableOpacity
-              style={[styles.voicePill, selectedVoiceId === null && styles.voicePillActive]}
-              onPress={async () => {
-                if (voiceSoundRef.current) await cleanupAllAudio();
-                setSelectedVoiceId(null);
-                saveCurrentSettings(null);
-              }}
-            >
-              <Text style={[styles.voicePillText, selectedVoiceId === null && styles.voicePillTextActive]}>
-                🧚‍♀️ Fée Magique
-              </Text>
-            </TouchableOpacity>
-
-            {customVoices.map((v) => (
+            <View style={styles.voiceOptionsWrapper}>
               <TouchableOpacity
-                key={v.id}
-                style={[styles.voicePill, selectedVoiceId === v.id && styles.voicePillActive]}
+                activeOpacity={0.6}
+                style={[styles.voicePill, selectedVoiceId === null && styles.voicePillActive]}
                 onPress={async () => {
                   if (voiceSoundRef.current) await cleanupAllAudio();
-                  setSelectedVoiceId(v.id);
-                  saveCurrentSettings(v.id);
+                  setSelectedVoiceId(null);
+                  saveCurrentSettings(null);
                 }}
               >
-                <Text style={[styles.voicePillText, selectedVoiceId === v.id && styles.voicePillTextActive]}>
-                  🎙️ {v.name}
+                <Text style={[styles.voicePillText, selectedVoiceId === null && styles.voicePillTextActive]}>
+                  🧚‍♀️ Fée Magique
                 </Text>
               </TouchableOpacity>
-            ))}
 
-            <TouchableOpacity style={styles.voicePillAdd} onPress={() => router.push('/voces')}>
-              <Text style={styles.voicePillAddText}>+ Cloner une nouvelle voix</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.label}>PRÉNOM DE L'ENFANT</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>👦</Text>
-            <TextInput style={styles.input} placeholder="Ex. Lucas" placeholderTextColor="#64748B" value={nombre} onChangeText={setNombre} />
-          </View>
-
-          <Text style={styles.label}>SON ÂGE</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>🎂</Text>
-            <TextInput style={styles.input} placeholder="Ex. 4" placeholderTextColor="#64748B" keyboardType="numeric" value={edad} onChangeText={setEdad} />
-          </View>
-
-          <Text style={styles.label}>UNIVERS OU THÈME</Text>
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>🚀</Text>
-            <TextInput style={styles.input} placeholder="Ex. dinosaures, étoiles..." placeholderTextColor="#64748B" value={tema} onChangeText={setTema} />
-          </View>
-
-          <Text style={styles.label}>IDÉES RAPIDES</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsRow} style={{ marginBottom: 15 }}>
-            {SUGGESTIONS.map((s, idx) => (
-              <TouchableOpacity key={idx} style={styles.suggestionChip} onPress={() => setHistoria(s)}>
-                <Text style={styles.suggestionChipText}>{s}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          <Text style={styles.label}>VOTRE IDÉE D'HISTOIRE</Text>
-          <View style={[styles.inputContainer, styles.storyInputContainer]}>
-            <Text style={styles.inputIcon}>✍️</Text>
-            {/* NUEVO PLACEHOLDER INSPIRADOR */}
-            <TextInput style={[styles.input, styles.storyInput]} placeholder="Ex: Lucas a peur de l'eau, mais Spiderman l'aide à nager..." placeholderTextColor="#64748B" multiline value={historia} onChangeText={setHistoria} textAlignVertical="top" maxLength={600} />
-          </View>
-
-          {/* NUEVA FRASE DE AYUDA DEBAJO DE LA CAJA */}
-          <Text style={styles.storyHint}>
-            Soyez créatif ! Plus vous donnez de détails, meilleur sera le conte. Ajoutez ses héros préférés de dessins animés ou de films, une émotion douce ou une petite aventure.
-          </Text>
-
-          <View style={styles.switchRow}>
-            <Text style={styles.switchLabel}>Musique de piano relaxante</Text>
-            <Switch value={musicEnabled} onValueChange={handleToggleMusic} trackColor={{ false: '#334155', true: '#10B981' }} />
-          </View>
-
-          <Text style={styles.discoveryText}>
-            {isPremium 
-              ? 'Accès Premium actif ✨' 
-              : freeStoryUsed 
-              ? 'Offre découverte utilisée 🔒' 
-              : "Offre découverte : 1 histoire gratuite aujourd'hui"}
-          </Text>
-
-          <Text style={styles.voiceSelectionIndicator}>
-            Cette histoire sera racontée par : <Text style={styles.voiceSelectionIndicatorStrong}>{getVoiceNameById(selectedVoiceId)}</Text>
-          </Text>
-
-          <TouchableOpacity style={styles.primaryButton} onPress={createStory} disabled={creatingStory} activeOpacity={0.9}>
-            {creatingStory ? (
-              <View style={styles.inlineLoader}>
-                <ActivityIndicator color="#FFF" />
-                <Text style={styles.primaryButtonTextLoading}>{loadingMessage}</Text>
-              </View>
-            ) : (
-              <Text style={styles.primaryButtonText}>Créer son histoire du soir 🌙</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {currentStory && (
-          <View style={styles.storyResultCard}>
-            {!!currentStory.imageUrl && (
-              <Image source={{ uri: currentStory.imageUrl }} style={styles.storyCoverImage} />
-            )}
-            <Text style={styles.storyTitle}>{currentStory.title}</Text>
-            <Text style={styles.storyMeta}>{currentStory.childName} · {currentStory.childAge} ans · {currentStory.dateLabel}</Text>
-            <Text style={styles.narratorBadge}>🎙️ Narré par : {currentStory.narratorName}</Text>
-
-            {/* REPRODUCTOR O MENSAJE DE CARGA */}
-            {creatingAudio ? (
-              <View style={styles.audioLoadingContainer}>
-                <ActivityIndicator color="#10B981" size="large" />
-                <Text style={styles.audioLoadingText}>{audioLoadingMessage}</Text>
-              </View>
-            ) : (
-              <View style={{ width: '100%', alignItems: 'center' }}>
-                <View style={styles.playerControls}>
-                  <TouchableOpacity onPress={() => skipAudio(-10000)} style={styles.skipBtn}>
-                    <Text style={styles.skipText}>-10s</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.mainPlayBtn} onPress={playStoryAudio}>
-                    <Text style={styles.mainPlayText}>{isPlaying ? '⏸' : '▶️'}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => skipAudio(10000)} style={styles.skipBtn}>
-                    <Text style={styles.skipText}>+10s</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <Slider
-                  style={{ width: '100%', height: 40, marginTop: 10 }}
-                  minimumValue={0}
-                  maximumValue={durationMillis}
-                  value={positionMillis}
-                  minimumTrackTintColor="#FCD34D"
-                  maximumTrackTintColor="#334155"
-                  thumbTintColor="#FCD34D"
-                  onSlidingComplete={(v) => voiceSoundRef.current?.setPositionAsync(v)}
-                />
-                <Text style={styles.progressLabel}>{formatMillis(positionMillis)} / {formatMillis(durationMillis)}</Text>
-
-                <TouchableOpacity style={styles.speedBtn} onPress={toggleSpeed}>
-                  <Text style={styles.speedBtnText}>
-                    Vitesse : {velocidadVoz === 1 ? 'Normale (1x)' : 'Relaxante (0.85x)'}
+              {customVoices.map((v) => (
+                <TouchableOpacity
+                  key={v.id}
+                  activeOpacity={0.6}
+                  style={[styles.voicePill, selectedVoiceId === v.id && styles.voicePillActive]}
+                  onPress={async () => {
+                    if (voiceSoundRef.current) await cleanupAllAudio();
+                    setSelectedVoiceId(v.id);
+                    saveCurrentSettings(v.id);
+                  }}
+                >
+                  <Text style={[styles.voicePillText, selectedVoiceId === v.id && styles.voicePillTextActive]}>
+                    🎙️ {v.name}
                   </Text>
                 </TouchableOpacity>
-              </View>
-            )}
-            {/* FIN REPRODUCTOR */}
-            
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/biblioteca')} activeOpacity={0.9}>
-              <Text style={styles.secondaryButtonText}>Voir dans la bibliothèque 📚</Text>
-            </TouchableOpacity>
+              ))}
 
-            <TouchableOpacity style={styles.tertiaryButton} onPress={resetForNewStory} activeOpacity={0.9}>
-              <Text style={styles.tertiaryButtonText}>Créer une nouvelle histoire ✨</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.storyText}>{currentStory.text}</Text>
+              <TouchableOpacity style={styles.voicePillAdd} onPress={() => router.push('/voces')}>
+                <Text style={styles.voicePillAddText}>+ Cloner une nouvelle voix</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
-      </ScrollView>
 
-      {/* NUEVO PAYWALL PREMIUM */}
-      <Modal visible={showPaywall} animationType="slide" transparent>
-        <View style={styles.pwOverlay}>
-          <View style={styles.pwContent}>
-            <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
-              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
-            </TouchableOpacity>
+          <View style={styles.card}>
+            <Text style={styles.label}>PRÉNOM DE L'ENFANT</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputIcon}>👦</Text>
+              <TextInput style={styles.input} placeholder="Ex. Lucas" placeholderTextColor="#64748B" value={nombre} onChangeText={setNombre} />
+            </View>
 
-            <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
-            <Text style={styles.pwTitle}>Passez au Premium</Text>
-            <Text style={styles.pwSub}>
-              Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
+            <Text style={styles.label}>SON ÂGE</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputIcon}>🎂</Text>
+              <TextInput style={styles.input} placeholder="Ex. 4" placeholderTextColor="#64748B" keyboardType="numeric" value={edad} onChangeText={setEdad} />
+            </View>
+
+            <Text style={styles.label}>UNIVERS OU THÈME</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputIcon}>🚀</Text>
+              <TextInput style={styles.input} placeholder="Ex. dinosaures, étoiles..." placeholderTextColor="#64748B" value={tema} onChangeText={setTema} />
+            </View>
+
+            <Text style={styles.label}>IDÉES RAPIDES</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsRow} style={{ marginBottom: 15 }}>
+              {SUGGESTIONS.map((s, idx) => (
+                <TouchableOpacity key={idx} style={styles.suggestionChip} onPress={() => setHistoria(s)}>
+                  <Text style={styles.suggestionChipText}>{s}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Text style={styles.label}>VOTRE IDÉE D'HISTOIRE</Text>
+            <View style={[styles.inputContainer, styles.storyInputContainer]}>
+              <Text style={styles.inputIcon}>✍️</Text>
+              {/* NUEVO PLACEHOLDER INSPIRADOR */}
+              <TextInput style={[styles.input, styles.storyInput]} placeholder="Ex: Lucas a peur de l'eau, mais Spiderman l'aide à nager..." placeholderTextColor="#64748B" multiline value={historia} onChangeText={setHistoria} textAlignVertical="top" maxLength={600} />
+            </View>
+
+            {/* NUEVA FRASE DE AYUDA DEBAJO DE LA CAJA */}
+            <Text style={styles.storyHint}>
+              Soyez créatif ! Plus vous donnez de détails, meilleur sera le conte. Ajoutez ses héros préférés de dessins animés ou de films, une émotion douce ou une petite aventure.
             </Text>
 
-            {packages.length > 0 ? (
-              packages.map((pkg) => (
-                <TouchableOpacity
-                  key={pkg.identifier}
-                  style={styles.pwBtnPremium}
-                  onPress={() => purchasePackage(pkg)}
-                  disabled={isPurchasing}
-                >
-                  {isPurchasing ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.pwBtnPremiumTitle}>
-                       {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
-                      </Text>
-                      <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={{ marginTop: 20, alignItems: 'center' }}>
-                <ActivityIndicator color="#FCD34D" size="large" />
-                <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
-                <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
-                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
-      </Modal>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Musique de piano relaxante</Text>
+              <Switch value={musicEnabled} onValueChange={handleToggleMusic} trackColor={{ false: '#334155', true: '#10B981' }} />
+            </View>
 
-    </KeyboardAvoidingView>
+            <Text style={styles.discoveryText}>
+              {isPremium 
+                ? 'Accès Premium actif ✨' 
+                : freeStoryUsed 
+                ? 'Offre découverte utilisée 🔒' 
+                : "Offre découverte : 1 histoire gratuite aujourd'hui"}
+            </Text>
+
+            <Text style={styles.voiceSelectionIndicator}>
+              Cette histoire sera racontée par : <Text style={styles.voiceSelectionIndicatorStrong}>{getVoiceNameById(selectedVoiceId)}</Text>
+            </Text>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={createStory} disabled={creatingStory} activeOpacity={0.9}>
+              {creatingStory ? (
+                <View style={styles.inlineLoader}>
+                  <ActivityIndicator color="#FFF" />
+                  <Text style={styles.primaryButtonTextLoading}>{loadingMessage}</Text>
+                </View>
+              ) : (
+                <Text style={styles.primaryButtonText}>Créer son histoire du soir 🌙</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {currentStory && (
+            <View style={styles.storyResultCard}>
+              {!!currentStory.imageUrl && (
+                <Image source={{ uri: currentStory.imageUrl }} style={styles.storyCoverImage} />
+              )}
+              <Text style={styles.storyTitle}>{currentStory.title}</Text>
+              <Text style={styles.storyMeta}>{currentStory.childName} · {currentStory.childAge} ans · {currentStory.dateLabel}</Text>
+              <Text style={styles.narratorBadge}>🎙️ Narré par : {currentStory.narratorName}</Text>
+
+              {/* REPRODUCTOR O MENSAJE DE CARGA */}
+              {creatingAudio ? (
+                <View style={styles.audioLoadingContainer}>
+                  <ActivityIndicator color="#10B981" size="large" />
+                  <Text style={styles.audioLoadingText}>{audioLoadingMessage}</Text>
+                </View>
+              ) : (
+                <View style={{ width: '100%', alignItems: 'center' }}>
+                  <View style={styles.playerControls}>
+                    <TouchableOpacity onPress={() => skipAudio(-10000)} style={styles.skipBtn}>
+                      <Text style={styles.skipText}>-10s</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.mainPlayBtn} onPress={playStoryAudio}>
+                      <Text style={styles.mainPlayText}>{isPlaying ? '⏸' : '▶️'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => skipAudio(10000)} style={styles.skipBtn}>
+                      <Text style={styles.skipText}>+10s</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <Slider
+                    style={{ width: '100%', height: 40, marginTop: 10 }}
+                    minimumValue={0}
+                    maximumValue={durationMillis}
+                    value={positionMillis}
+                    minimumTrackTintColor="#FCD34D"
+                    maximumTrackTintColor="#334155"
+                    thumbTintColor="#FCD34D"
+                    onSlidingComplete={(v) => voiceSoundRef.current?.setPositionAsync(v)}
+                  />
+                  <Text style={styles.progressLabel}>{formatMillis(positionMillis)} / {formatMillis(durationMillis)}</Text>
+
+                  <TouchableOpacity style={styles.speedBtn} onPress={toggleSpeed}>
+                    <Text style={styles.speedBtnText}>
+                      Vitesse : {velocidadVoz === 1 ? 'Normale (1x)' : 'Relaxante (0.85x)'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {/* FIN REPRODUCTOR */}
+              
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/biblioteca')} activeOpacity={0.9}>
+                <Text style={styles.secondaryButtonText}>Voir dans la bibliothèque 📚</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.tertiaryButton} onPress={resetForNewStory} activeOpacity={0.9}>
+                <Text style={styles.tertiaryButtonText}>Créer une nouvelle histoire ✨</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.storyText}>{currentStory.text}</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* NUEVO PAYWALL PREMIUM */}
+        <Modal visible={showPaywall} animationType="slide" transparent>
+          <View style={styles.pwOverlay}>
+            <View style={styles.pwContent}>
+              <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
+                <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
+              <Text style={styles.pwTitle}>Passez au Premium</Text>
+              <Text style={styles.pwSub}>
+                Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
+              </Text>
+
+              {packages.length > 0 ? (
+                packages.map((pkg) => (
+                  <TouchableOpacity
+                    key={pkg.identifier}
+                    style={styles.pwBtnPremium}
+                    onPress={() => purchasePackage(pkg)}
+                    disabled={isPurchasing}
+                  >
+                    {isPurchasing ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Text style={styles.pwBtnPremiumTitle}>
+                         {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
+                        </Text>
+                        <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={{ marginTop: 20, alignItems: 'center' }}>
+                  <ActivityIndicator color="#FCD34D" size="large" />
+                  <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
+                  <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#0F172A' },
   container: { flex: 1, backgroundColor: '#0F172A' },
   loaderScreen: { flex: 1, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
-  scroll: { padding: 24, paddingTop: 60, paddingBottom: 180 },
+  scroll: { padding: 24, paddingTop: 20, paddingBottom: 180 },
   heroContainer: { alignItems: 'center', marginBottom: 25 },
   audioLoadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)' },
   audioLoadingText: { color: '#10B981', fontWeight: '800', fontSize: 15, marginTop: 12, textAlign: 'center' },

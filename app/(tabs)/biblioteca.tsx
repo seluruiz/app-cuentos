@@ -23,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,6 +36,12 @@ const STORAGE_KEYS = {
 };
 
 const API_BASE_URL = 'https://api.cuentosdream.com';
+
+const AUDIO_LOADING_MESSAGES = [
+  "Préparation de l'audio HD 🎧...",
+  'Connexion au studio magique 🎙️...',
+  "Ajustement de l'intonation ✨...",
+];
 
 export default function BibliotecaScreen() {
   const voiceSoundRef = useRef(null);
@@ -63,6 +70,8 @@ export default function BibliotecaScreen() {
   const [selectedVoiceId, setSelectedVoiceId] = useState(null);
   const [activeStoryIdPlaying, setActiveStoryIdPlaying] = useState(null);
 
+  const [audioLoadingMessage, setAudioLoadingMessage] = useState(AUDIO_LOADING_MESSAGES[0]);
+
   const loadOfferings = async () => {
     try {
       const offerings = await Purchases.getOfferings();
@@ -90,6 +99,22 @@ export default function BibliotecaScreen() {
       setSelectedVoiceId(null);
     }
   }, [selectedStory]);
+
+  // Efecto para rotar los mensajes de carga en la biblioteca
+  useEffect(() => {
+    let interval;
+    if (creatingAudio) {
+      let i = 0;
+      setAudioLoadingMessage(AUDIO_LOADING_MESSAGES[0]);
+      interval = setInterval(() => {
+        i = (i + 1) % AUDIO_LOADING_MESSAGES.length;
+        setAudioLoadingMessage(AUDIO_LOADING_MESSAGES[i]);
+      }, 2200);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [creatingAudio]);
 
   const loadData = async () => {
     try {
@@ -417,187 +442,207 @@ export default function BibliotecaScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerTitle}>Bibliothèque 📚</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.headerTitle}>Bibliothèque 📚</Text>
 
-      <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Rechercher Lucas, dinosaures..."
-          placeholderTextColor="#64748B"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+        <View style={styles.searchContainer}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher Lucas, dinosaures..."
+            placeholderTextColor="#64748B"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearSearchBtn}>
+              <Text style={styles.clearSearchText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <FlatList
+          data={filteredLibrary}
+          keyExtractor={(i, index) => i?.id?.toString?.() || String(index)}
+          contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
+          renderItem={renderCard}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🌙</Text>
+              <Text style={styles.emptyTitle}>Aucun conte magique trouvé.</Text>
+              <Text style={styles.emptySub}>Créez votre première histoire magique sur l'écran d'accueil ✨</Text>
+            </View>
+          }
         />
-      </View>
 
-      <FlatList
-        data={filteredLibrary}
-        keyExtractor={(i, index) => i?.id?.toString?.() || String(index)}
-        contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
-        renderItem={renderCard}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>🌙</Text>
-            <Text style={styles.emptyTitle}>Aucun conte magique trouvé.</Text>
-            <Text style={styles.emptySub}>Créez votre première histoire magique sur l'écran d'accueil ✨</Text>
-          </View>
-        }
-      />
+        <Modal visible={selectedStory !== null} animationType="slide" onRequestClose={closePlayer}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity onPress={closePlayer} style={styles.closeBtnCircle}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </TouchableOpacity>
 
-      <Modal visible={selectedStory !== null} animationType="slide" onRequestClose={closePlayer}>
-        <View style={styles.modalContainer}>
-          <TouchableOpacity onPress={closePlayer} style={styles.closeBtnCircle}>
-            <Text style={styles.closeBtnText}>✕</Text>
-          </TouchableOpacity>
+            <ScrollView contentContainerStyle={styles.modalScroll}>
+              {selectedStory?.imageUrl ? (
+                <Image source={{ uri: selectedStory.imageUrl }} style={styles.modalImage} />
+              ) : (
+                <View style={[styles.modalImage, styles.cardImgPlaceholder]}>
+                  <Text style={styles.cardImgPlaceholderEmoji}>📖</Text>
+                </View>
+              )}
+              
+              <Text style={styles.modalTitle}>{selectedStory?.title}</Text>
+              <Text style={styles.modalMeta}>{selectedStory?.childName} · {selectedStory?.childAge} ans · {selectedStory?.dateLabel}</Text>
 
-          <ScrollView contentContainerStyle={styles.modalScroll}>
-            {selectedStory?.imageUrl ? (
-              <Image source={{ uri: selectedStory.imageUrl }} style={styles.modalImage} />
-            ) : (
-              <View style={[styles.modalImage, styles.cardImgPlaceholder]}>
-                <Text style={styles.cardImgPlaceholderEmoji}>📖</Text>
-              </View>
-            )}
-            
-            <Text style={styles.modalTitle}>{selectedStory?.title}</Text>
-            <Text style={styles.modalMeta}>{selectedStory?.childName} · {selectedStory?.childAge} ans · {selectedStory?.dateLabel}</Text>
-
-            <View style={styles.voiceSelectorInside}>
-              <Text style={styles.voiceLabel}>QUI DOIT RACONTER ?</Text>
-              <View style={styles.voiceStack}>
-                <TouchableOpacity
-                  style={[styles.vPill, selectedVoiceId === null && styles.vPillActive]}
-                  onPress={async () => {
-                    await cleanupAudio();
-                    setSelectedVoiceId(null);
-                  }}
-                >
-                  <Text style={[styles.vText, selectedVoiceId === null && styles.vTextActive]}>🧚‍♀️ Fée Magique</Text>
-                </TouchableOpacity>
-
-                {customVoices.map((v) => (
+              <View style={styles.voiceSelectorInside}>
+                <Text style={styles.voiceLabel}>QUI DOIT RACONTER ?</Text>
+                <View style={styles.voiceStack}>
                   <TouchableOpacity
-                    key={v.id}
-                    style={[styles.vPill, selectedVoiceId === v.id && styles.vPillActive]}
+                    activeOpacity={0.6}
+                    style={[styles.vPill, selectedVoiceId === null && styles.vPillActive]}
                     onPress={async () => {
                       await cleanupAudio();
-                      setSelectedVoiceId(v.id);
+                      setSelectedVoiceId(null);
                     }}
                   >
-                    <Text style={[styles.vText, selectedVoiceId === v.id && styles.vTextActive]}>🎙️ {v.name}</Text>
+                    <Text style={[styles.vText, selectedVoiceId === null && styles.vTextActive]}>🧚‍♀️ Fée Magique</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.voiceHelperText}>
-                Lecture avec : {getVoiceNameById(selectedVoiceId)}
-              </Text>
-            </View>
 
-            <View style={styles.musicRow}>
-              <Text style={styles.musicLabel}>Musique de piano relaxante</Text>
-              <Switch
-                value={musicEnabled}
-                onValueChange={handleToggleMusic}
-                trackColor={{ false: '#334155', true: '#10B981' }}
+                  {customVoices.map((v) => (
+                    <TouchableOpacity
+                      key={v.id}
+                      activeOpacity={0.6}
+                      style={[styles.vPill, selectedVoiceId === v.id && styles.vPillActive]}
+                      onPress={async () => {
+                        await cleanupAudio();
+                        setSelectedVoiceId(v.id);
+                      }}
+                    >
+                      <Text style={[styles.vText, selectedVoiceId === v.id && styles.vTextActive]}>🎙️ {v.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <Text style={styles.voiceHelperText}>
+                  Lecture avec : {getVoiceNameById(selectedVoiceId)}
+                </Text>
+              </View>
+
+              <View style={styles.musicRow}>
+                <Text style={styles.musicLabel}>Musique de piano relaxante</Text>
+                <Switch
+                  value={musicEnabled}
+                  onValueChange={handleToggleMusic}
+                  trackColor={{ false: '#334155', true: '#10B981' }}
+                />
+              </View>
+
+              {/* Mensajes dinámicos de audio en lugar de los botones */}
+              {creatingAudio ? (
+                <View style={styles.audioLoadingContainer}>
+                  <ActivityIndicator color="#10B981" size="large" />
+                  <Text style={styles.audioLoadingText}>{audioLoadingMessage}</Text>
+                </View>
+              ) : (
+                <View style={styles.playerControls}>
+                  <TouchableOpacity onPress={() => skipAudio(-10000)} style={styles.skipBtn}>
+                    <Text style={styles.skipText}>-10s</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.mainPlayBtn} onPress={() => playStoryAudio(selectedStory)}>
+                    <Text style={styles.mainPlayText}>{isPlaying ? '⏸' : '▶️'}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => skipAudio(10000)} style={styles.skipBtn}>
+                    <Text style={styles.skipText}>+10s</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <Slider
+                style={{ width: '100%', height: 40, marginTop: 10 }}
+                minimumValue={0}
+                maximumValue={durationMillis}
+                value={positionMillis}
+                minimumTrackTintColor="#FCD34D"
+                maximumTrackTintColor="#334155"
+                thumbTintColor="#FCD34D"
+                onSlidingComplete={(v) => voiceSoundRef.current?.setPositionAsync(v)}
               />
-            </View>
+              <Text style={styles.progressLabel}>{formatMillis(positionMillis)} / {formatMillis(durationMillis)}</Text>
 
-            <View style={styles.playerControls}>
-              <TouchableOpacity onPress={() => skipAudio(-10000)} style={styles.skipBtn}>
-                <Text style={styles.skipText}>-10s</Text>
+              <TouchableOpacity
+                style={styles.speedBtn}
+                onPress={toggleSpeed}
+              >
+                <Text style={styles.speedBtnText}>
+                  Vitesse : {velocidadVoz === 1 ? 'Normale (1x)' : 'Relaxante (0.85x)'}
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.mainPlayBtn} onPress={() => playStoryAudio(selectedStory)} disabled={creatingAudio}>
-                {creatingAudio ? <ActivityIndicator color="#FFF" /> : <Text style={styles.mainPlayText}>{isPlaying ? '⏸' : '▶️'}</Text>}
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => skipAudio(10000)} style={styles.skipBtn}>
-                <Text style={styles.skipText}>+10s</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Slider
-              style={{ width: '100%', height: 40, marginTop: 10 }}
-              minimumValue={0}
-              maximumValue={durationMillis}
-              value={positionMillis}
-              minimumTrackTintColor="#FCD34D"
-              maximumTrackTintColor="#334155"
-              thumbTintColor="#FCD34D"
-              onSlidingComplete={(v) => voiceSoundRef.current?.setPositionAsync(v)}
-            />
-            <Text style={styles.progressLabel}>{formatMillis(positionMillis)} / {formatMillis(durationMillis)}</Text>
-
-            <TouchableOpacity
-              style={styles.speedBtn}
-              onPress={toggleSpeed}
-            >
-              <Text style={styles.speedBtnText}>
-                Vitesse : {velocidadVoz === 1 ? 'Normale (1x)' : 'Relaxante (0.85x)'}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={styles.modalText}>{selectedStory?.text}</Text>
-          </ScrollView>
-        </View>
-      </Modal>
-
-      <Modal visible={showPaywall} animationType="slide" transparent>
-        <View style={styles.pwOverlay}>
-          <View style={styles.pwContent}>
-            <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
-              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
-            </TouchableOpacity>
-
-            <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
-            <Text style={styles.pwTitle}>Passez au Premium</Text>
-            <Text style={styles.pwSub}>
-              Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
-            </Text>
-
-            {packages.length > 0 ? (
-              packages.map((pkg) => (
-                <TouchableOpacity
-                  key={pkg.identifier}
-                  style={styles.pwBtnPremium}
-                  onPress={() => purchasePackage(pkg)}
-                  disabled={isPurchasing}
-                >
-                  {isPurchasing ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.pwBtnPremiumTitle}>
-                        {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
-                      </Text>
-                      <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={{ marginTop: 20, alignItems: 'center' }}>
-                <ActivityIndicator color="#FCD34D" size="large" />
-                <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
-                <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
-                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+              <Text style={styles.modalText}>{selectedStory?.text}</Text>
+            </ScrollView>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+
+        <Modal visible={showPaywall} animationType="slide" transparent>
+          <View style={styles.pwOverlay}>
+            <View style={styles.pwContent}>
+              <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
+                <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
+              <Text style={styles.pwTitle}>Passez au Premium</Text>
+              <Text style={styles.pwSub}>
+                Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
+              </Text>
+
+              {packages.length > 0 ? (
+                packages.map((pkg) => (
+                  <TouchableOpacity
+                    key={pkg.identifier}
+                    style={styles.pwBtnPremium}
+                    onPress={() => purchasePackage(pkg)}
+                    disabled={isPurchasing}
+                  >
+                    {isPurchasing ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Text style={styles.pwBtnPremiumTitle}>
+                          {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
+                        </Text>
+                        <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={{ marginTop: 20, alignItems: 'center' }}>
+                  <ActivityIndicator color="#FCD34D" size="large" />
+                  <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
+                  <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A', paddingTop: 60 },
+  safeArea: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#0F172A' },
   headerTitle: { fontSize: 34, fontWeight: '900', color: '#FCD34D', textAlign: 'center', marginBottom: 25 },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1E293B', marginHorizontal: 20, borderRadius: 16, paddingHorizontal: 15, marginBottom: 25, borderWidth: 1, borderColor: '#334155' },
   searchIcon: { fontSize: 16, marginRight: 10 },
   searchInput: { flex: 1, color: '#FFF', paddingVertical: 15, fontSize: 16 },
+  clearSearchBtn: { padding: 5, paddingHorizontal: 10 },
+  clearSearchText: { color: '#94A3B8', fontSize: 16, fontWeight: 'bold' },
   cardWrapper: { marginBottom: 25 },
   card: { backgroundColor: '#1E293B', borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: '#334155', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 10 },
   cardImg: { width: '100%', height: 200 },
@@ -644,6 +689,8 @@ const styles = StyleSheet.create({
   speedBtn: { alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#334155', borderRadius: 12, marginTop: 8, marginBottom: 25 },
   speedBtnText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
   modalText: { color: '#F8FAFC', fontSize: 17, lineHeight: 28 },
+  audioLoadingContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 30, backgroundColor: 'rgba(16, 185, 129, 0.1)', borderRadius: 16, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)' },
+  audioLoadingText: { color: '#10B981', fontWeight: '800', fontSize: 15, marginTop: 12, textAlign: 'center' },
 
   /* ESTILOS DEL NUEVO PAYWALL */
   pwOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.95)', justifyContent: 'center', padding: 20 },

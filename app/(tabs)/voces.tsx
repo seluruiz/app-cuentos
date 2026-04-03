@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import Purchases from 'react-native-purchases';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const STORAGE_KEYS = {
   CUSTOM_VOICES: '@custom_voices_array_v1',
@@ -383,308 +384,311 @@ export default function VocesScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerTitle}>Studio de Voix 🎙️</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.headerTitle}>Studio de Voix 🎙️</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.heroCard}>
-          <Text style={styles.heroTitle}>La Magie de votre Voix</Text>
-          <Text style={styles.heroText}>
-            Créez une voix familière pour raconter ses histoires du soir, même lorsque vous n'êtes pas disponible.
-          </Text>
-        </View>
-
-        <TouchableOpacity 
-          style={[styles.primaryButton, isUploadingVoice && { opacity: 0.6 }]} 
-          onPress={handleOpenVoiceModal}
-          disabled={isUploadingVoice}
-        >
-          <Text style={styles.primaryButtonText}>+ Cloner une nouvelle voix</Text>
-        </TouchableOpacity>
-
-        <View style={styles.ideasCard}>
-          <Text style={styles.ideasTitle}>Idées de voix à créer :</Text>
-          <Text style={styles.ideasLine}>👨 Papa pour les histoires du soir</Text>
-          <Text style={styles.ideasLine}>👩 Maman pour les siestes</Text>
-          <Text style={styles.ideasLine}>👵 Mamie pour les vacances</Text>
-          <Text style={styles.ideasLine}>👴 Papi pour les contes drôles</Text>
-        </View>
-
-        {customVoices.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>🎤</Text>
-            <Text style={styles.emptyText}>Aucune voix enregistrée pour le moment.</Text>
-            <Text style={styles.emptySubtext}>Ajoutez une voix pour rendre les histoires encore plus personnelles.</Text>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.heroCard}>
+            <Text style={styles.heroTitle}>La Magie de votre Voix</Text>
+            <Text style={styles.heroText}>
+              Créez une voix familière pour raconter ses histoires du soir, même lorsque vous n'êtes pas disponible.
+            </Text>
           </View>
-        ) : (
-          <View style={styles.voiceList}>
-            <Text style={styles.listTitle}>Vos voix clonées</Text>
-            {customVoices.map((voice) => (
-              <View key={voice.id} style={styles.voiceListItem}>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.voiceRowTop}>
-                    <View style={styles.voiceIconBg}><Text>🎙️</Text></View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.voiceListName}>{voice.name}</Text>
-                      <Text style={styles.voiceListSubtitle}>{voice.subtitle || 'Disponible sur l’écran d’accueil'}</Text>
+
+          <TouchableOpacity 
+            style={[styles.primaryButton, isUploadingVoice && { opacity: 0.6 }]} 
+            onPress={handleOpenVoiceModal}
+            disabled={isUploadingVoice}
+          >
+            <Text style={styles.primaryButtonText}>+ Cloner une nouvelle voix</Text>
+          </TouchableOpacity>
+
+          <View style={styles.ideasCard}>
+            <Text style={styles.ideasTitle}>Idées de voix à créer :</Text>
+            <Text style={styles.ideasLine}>👨 Papa pour les histoires du soir</Text>
+            <Text style={styles.ideasLine}>👩 Maman pour les siestes</Text>
+            <Text style={styles.ideasLine}>👵 Mamie pour les vacances</Text>
+            <Text style={styles.ideasLine}>👴 Papi pour les contes drôles</Text>
+          </View>
+
+          {customVoices.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyEmoji}>🎤</Text>
+              <Text style={styles.emptyText}>Aucune voix enregistrée pour le moment.</Text>
+              <Text style={styles.emptySubtext}>Ajoutez une voix pour rendre les histoires encore plus personnelles.</Text>
+            </View>
+          ) : (
+            <View style={styles.voiceList}>
+              <Text style={styles.listTitle}>Vos voix clonées</Text>
+              {customVoices.map((voice) => (
+                <View key={voice.id} style={styles.voiceListItem}>
+                  <View style={{ flex: 1 }}>
+                    <View style={styles.voiceRowTop}>
+                      <View style={styles.voiceIconBg}><Text>🎙️</Text></View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.voiceListName}>{voice.name}</Text>
+                        <Text style={styles.voiceListSubtitle}>{voice.subtitle || 'Disponible sur l’écran d’accueil'}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
 
-                <View style={styles.voiceActions}>
-                  <TouchableOpacity onPress={() => openRenameModal(voice)} style={styles.smallActionBtn}>
-                    <Text style={styles.smallActionText}>✏️</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteVoice(voice.id)} style={styles.smallActionBtn}>
-                    <Text style={styles.smallActionText}>🗑️</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Modal principal de grabación */}
-      <Modal visible={showVoiceModal} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.voiceModalContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 10 }}>
-            <TouchableOpacity 
-              style={[styles.closeIconBtnCircle, isUploadingVoice && { opacity: 0.5 }]} 
-              onPress={async () => {
-                if (isUploadingVoice) return;
-                await resetVoiceFlow();
-                setShowVoiceModal(false);
-              }}
-            >
-              <Text style={styles.closeIconText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {voiceStep === 1 && (
-            <View style={styles.voiceStepContent}>
-              <Text style={styles.voiceModalEmoji}>👤</Text>
-              <Text style={styles.voiceModalTitle}>Qui êtes-vous ?</Text>
-              <Text style={styles.voiceModalSubtitle}>
-                Donnez un nom à cette voix pour la retrouver fácilmente (ex : Papa, Maman, Mamie...)
-              </Text>
-
-              <View style={[styles.inputContainer, { width: '100%', marginBottom: 30 }]}>
-                <TextInput 
-                  style={styles.input} 
-                  placeholder="Ex. Papa" 
-                  placeholderTextColor="#64748B" 
-                  value={newVoiceName} 
-                  onChangeText={setNewVoiceName} 
-                />
-              </View>
-
-              <View style={styles.legalBox}>
-                <Text style={styles.legalBoxText}>
-                  🔒 Votre voix est traitée par notre partenaire d'IA sécurisé uniquement pour générer les contes dans cette application.{'\n\n'}
-                  Vous pouvez supprimer cette voix plus tard depuis cette page.
-                </Text>
-              </View>
-
-              <View style={styles.consentRow}>
-                <Switch 
-                  value={hasConsent} 
-                  onValueChange={setHasConsent} 
-                  trackColor={{ false: '#334155', true: '#8B5CF6' }} 
-                />
-                <Text style={styles.consentLabel}>
-                  Je confirme que cette voix est la mienne ou que j'ai l'autorisation de l'utiliser. J'accepte son traitement uniquement pour créer des narrations dans cette application.
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.modalBtn, 
-                  { width: '100%', opacity: hasConsent && newVoiceName.trim().length >= 2 ? 1 : 0.5 }
-                ]}
-                disabled={!(hasConsent && newVoiceName.trim().length >= 2)}
-                onPress={() => setVoiceStep(2)}
-              >
-                <Text style={styles.modalBtnText}>Continuer</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {voiceStep === 2 && (
-            <View style={styles.voiceStepContent}>
-              <Text style={styles.voiceModalEmoji}>🎙️</Text>
-              <Text style={styles.voiceModalTitle}>Studio de voix</Text>
-              
-              <Text style={styles.scriptWarning}>
-                🔴 Lisez lentement, à voix basse et avec beaucoup de tendresse (comme si vous lisiez un vrai conte), tout en bordant votre enfant dans son lit.
-              </Text>
-
-              <View style={styles.scriptBox}>
-                <Text style={styles.scriptText}>
-                  "Il était une fois... dans une forêt magique et secrète, un petit renard profondément endormi. Soudain... un bruit très doux le réveilla ! « Qui est là ? » murmura-t-il doucement, en regardant autour de lui. C'était juste le vent... qui chantait une merveilleuse berceuse sous les étoiles brillantes. Rassuré, le petit renard ferma les yeux... respira très calmement... et s'endormit paisiblement dans son nid douillet. Chut... la nuit est là... fais de beaux rêves..."
-                </Text>
-              </View>
-
-              <View style={{ alignItems: 'center', marginTop: 30 }}>
-                <TouchableOpacity 
-                  style={[styles.recordCircle, isRecording && styles.recordingActive]} 
-                  onPress={isRecording ? stopRecordingVoice : startRecordingVoice}
-                >
-                  <Text style={{ fontSize: 32 }}>{isRecording ? '⏹️' : '🎤'}</Text>
-                </TouchableOpacity>
-                <Text style={styles.recordTimer}>{formatSeconds(recordingSeconds)}</Text>
-                <Text style={{ color: isRecording ? '#EF4444' : '#94A3B8', marginTop: 10, fontWeight: 'bold' }}>
-                  {isRecording ? "Enregistrement en cours..." : 'Appuyez pour parler'}
-                </Text>
-                
-                <Text style={styles.recommendationText}>Idéal : 30-45 secondes</Text>
-
-                {recordingSeconds >= 25 && recordingSeconds < 45 && (
-                  <Text style={styles.perfectText}>Parfait, vous pouvez arrêter l’enregistrement.</Text>
-                )}
-                {recordingSeconds >= 45 && (
-                  <Text style={styles.warningText}>Durée suffisante, vous pouvez arrêter l'enregistrement.</Text>
-                )}
-              </View>
-            </View>
-          )}
-
-          {voiceStep === 3 && (
-            <View style={styles.voiceStepContent}>
-              <Text style={styles.voiceModalEmoji}>🎧</Text>
-              <Text style={styles.voiceModalTitle}>Vérification</Text>
-              <Text style={styles.voiceModalSubtitle}>
-                Écoutez votre enregistrement. Si le son est clair, envoyez-le au studio.
-              </Text>
-
-              <TouchableOpacity style={styles.previewButton} onPress={playRecordedPreview}>
-                <Text style={styles.previewButtonText}>
-                  {isPreviewPlaying ? "⏹ Arrêter l'écoute" : '▶️ Écouter mon enregistrement'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={{ padding: 15, marginTop: 10 }} 
-                onPress={() => { setRecordedUri(null); setVoiceStep(2); }} 
-                disabled={isUploadingVoice}
-              >
-                <Text style={{ color: '#94A3B8', textDecorationLine: 'underline' }}>Refaire l'enregistrement</Text>
-              </TouchableOpacity>
-
-              <View style={{ flex: 1 }} />
-
-              <View style={styles.uploadActionContainer}>
-                {isUploadingVoice ? (
-                  <View style={styles.audioLoadingContainer}>
-                    <ActivityIndicator color="#10B981" size="large" />
-                    <Text style={styles.audioLoadingText}>{uploadMessage}</Text>
+                  <View style={styles.voiceActions}>
+                    <TouchableOpacity onPress={() => openRenameModal(voice)} style={styles.smallActionBtn}>
+                      <Text style={styles.smallActionText}>✏️</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteVoice(voice.id)} style={styles.smallActionBtn}>
+                      <Text style={styles.smallActionText}>🗑️</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : (
-                  <TouchableOpacity 
-                    style={[styles.modalBtn, { width: '100%', backgroundColor: '#10B981' }]} 
-                    onPress={submitVoiceToServer} 
-                  >
-                    <Text style={styles.modalBtnText}>✨ Générer ma voix magique</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                </View>
+              ))}
             </View>
           )}
-        </View>
-      </Modal>
+        </ScrollView>
 
-      {/* Modal para renombrar voz */}
-      <Modal visible={showRenameModal} animationType="fade" transparent>
-        <View style={styles.renameOverlay}>
-          <View style={styles.renameContent}>
-            <Text style={styles.renameTitle}>Renommer la voix</Text>
-            <Text style={styles.renameSubtitle}>Choisissez un nouveau nom.</Text>
-            
-            <TextInput
-              style={styles.renameInput}
-              value={renameValue}
-              onChangeText={setRenameValue}
-              placeholder="Ex. Papa"
-              placeholderTextColor="#64748B"
-              autoFocus
-            />
-
-            <View style={styles.renameActions}>
+        {/* Modal principal de grabación */}
+        <Modal visible={showVoiceModal} animationType="slide" presentationStyle="pageSheet">
+          <View style={styles.voiceModalContainer}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 10 }}>
               <TouchableOpacity 
-                style={styles.renameCancelBtn} 
-                onPress={() => {
-                  setShowRenameModal(false);
-                  setVoiceToRename(null);
+                style={[styles.closeIconBtnCircle, isUploadingVoice && { opacity: 0.5 }]} 
+                onPress={async () => {
+                  if (isUploadingVoice) return;
+                  await resetVoiceFlow();
+                  setShowVoiceModal(false);
                 }}
               >
-                <Text style={styles.renameCancelText}>Annuler</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.renameSaveBtn, renameValue.trim().length < 2 && { opacity: 0.5 }]}
-                disabled={renameValue.trim().length < 2}
-                onPress={handleRenameSave}
-              >
-                <Text style={styles.renameSaveText}>Enregistrer</Text>
+                <Text style={styles.closeIconText}>✕</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
 
-      {/* NUEVO PAYWALL PREMIUM */}
-      <Modal visible={showPaywall} animationType="slide" transparent>
-        <View style={styles.pwOverlay}>
-          <View style={styles.pwContent}>
-            <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
-              <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
-            </TouchableOpacity>
+            {voiceStep === 1 && (
+              <View style={styles.voiceStepContent}>
+                <Text style={styles.voiceModalEmoji}>👤</Text>
+                <Text style={styles.voiceModalTitle}>Qui êtes-vous ?</Text>
+                <Text style={styles.voiceModalSubtitle}>
+                  Donnez un nom à cette voix pour la retrouver fácilmente (ex : Papa, Maman, Mamie...)
+                </Text>
 
-            <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
-            <Text style={styles.pwTitle}>Passez au Premium</Text>
-            <Text style={styles.pwSub}>
-              Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
-            </Text>
+                <View style={[styles.inputContainer, { width: '100%', marginBottom: 30 }]}>
+                  <TextInput 
+                    style={styles.input} 
+                    placeholder="Ex. Papa" 
+                    placeholderTextColor="#64748B" 
+                    value={newVoiceName} 
+                    onChangeText={setNewVoiceName} 
+                  />
+                </View>
 
-            {packages.length > 0 ? (
-              packages.map((pkg) => (
+                <View style={styles.legalBox}>
+                  <Text style={styles.legalBoxText}>
+                    🔒 Votre voix est traitée par notre partenaire d'IA sécurisé uniquement pour générer les contes dans cette application.{'\n\n'}
+                    Vous pouvez supprimer cette voix plus tard depuis cette page.
+                  </Text>
+                </View>
+
+                <View style={styles.consentRow}>
+                  <Switch 
+                    value={hasConsent} 
+                    onValueChange={setHasConsent} 
+                    trackColor={{ false: '#334155', true: '#8B5CF6' }} 
+                  />
+                  <Text style={styles.consentLabel}>
+                    Je confirme que cette voix est la mienne ou que j'ai l'autorisation de l'utiliser. J'accepte son traitement uniquement pour créer des narrations dans cette application.
+                  </Text>
+                </View>
+
                 <TouchableOpacity
-                  key={pkg.identifier}
-                  style={styles.pwBtnPremium}
-                  onPress={() => purchasePackage(pkg)}
-                  disabled={isPurchasing}
+                  style={[
+                    styles.modalBtn, 
+                    { width: '100%', opacity: hasConsent && newVoiceName.trim().length >= 2 ? 1 : 0.5 }
+                  ]}
+                  disabled={!(hasConsent && newVoiceName.trim().length >= 2)}
+                  onPress={() => setVoiceStep(2)}
                 >
-                  {isPurchasing ? (
-                    <ActivityIndicator color="#FFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.pwBtnPremiumTitle}>
-                         {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
-                      </Text>
-                      <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={{ marginTop: 20, alignItems: 'center' }}>
-                <ActivityIndicator color="#FCD34D" size="large" />
-                <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
-                <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
-                  <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
+                  <Text style={styles.modalBtnText}>Continuer</Text>
                 </TouchableOpacity>
               </View>
             )}
-          </View>
-        </View>
-      </Modal>
 
-    </View>
+            {voiceStep === 2 && (
+              <View style={styles.voiceStepContent}>
+                <Text style={styles.voiceModalEmoji}>🎙️</Text>
+                <Text style={styles.voiceModalTitle}>Studio de voix</Text>
+                
+                <Text style={styles.scriptWarning}>
+                  🔴 Lisez lentement, à voix basse et avec beaucoup de tendresse (comme si vous lisiez un vrai conte), tout en bordant votre enfant dans son lit.
+                </Text>
+
+                <View style={styles.scriptBox}>
+                  <Text style={styles.scriptText}>
+                    "Il était une fois... dans une forêt magique et secrète, un petit renard profondément endormi. Soudain... un bruit très doux le réveilla ! « Qui est là ? » murmura-t-il doucement, en regardant autour de lui. C'était juste le vent... qui chantait une merveilleuse berceuse sous les étoiles brillantes. Rassuré, le petit renard ferma les yeux... respira très calmement... et s'endormit paisiblement dans son nid douillet. Chut... la nuit est là... fais de beaux rêves..."
+                  </Text>
+                </View>
+
+                <View style={{ alignItems: 'center', marginTop: 30 }}>
+                  <TouchableOpacity 
+                    style={[styles.recordCircle, isRecording && styles.recordingActive]} 
+                    onPress={isRecording ? stopRecordingVoice : startRecordingVoice}
+                  >
+                    <Text style={{ fontSize: 32 }}>{isRecording ? '⏹️' : '🎤'}</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.recordTimer}>{formatSeconds(recordingSeconds)}</Text>
+                  <Text style={{ color: isRecording ? '#EF4444' : '#94A3B8', marginTop: 10, fontWeight: 'bold' }}>
+                    {isRecording ? "Enregistrement en cours..." : 'Appuyez pour parler'}
+                  </Text>
+                  
+                  <Text style={styles.recommendationText}>Idéal : 30-45 secondes</Text>
+
+                  {recordingSeconds >= 25 && recordingSeconds < 45 && (
+                    <Text style={styles.perfectText}>Parfait, vous pouvez arrêter l’enregistrement.</Text>
+                  )}
+                  {recordingSeconds >= 45 && (
+                    <Text style={styles.warningText}>Durée suffisante, vous pouvez arrêter l'enregistrement.</Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {voiceStep === 3 && (
+              <View style={styles.voiceStepContent}>
+                <Text style={styles.voiceModalEmoji}>🎧</Text>
+                <Text style={styles.voiceModalTitle}>Vérification</Text>
+                <Text style={styles.voiceModalSubtitle}>
+                  Écoutez votre enregistrement. Si le son est clair, envoyez-le au studio.
+                </Text>
+
+                <TouchableOpacity style={styles.previewButton} onPress={playRecordedPreview}>
+                  <Text style={styles.previewButtonText}>
+                    {isPreviewPlaying ? "⏹ Arrêter l'écoute" : '▶️ Écouter mon enregistrement'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={{ padding: 15, marginTop: 10 }} 
+                  onPress={() => { setRecordedUri(null); setVoiceStep(2); }} 
+                  disabled={isUploadingVoice}
+                >
+                  <Text style={{ color: '#94A3B8', textDecorationLine: 'underline' }}>Refaire l'enregistrement</Text>
+                </TouchableOpacity>
+
+                <View style={{ flex: 1 }} />
+
+                <View style={styles.uploadActionContainer}>
+                  {isUploadingVoice ? (
+                    <View style={styles.audioLoadingContainer}>
+                      <ActivityIndicator color="#10B981" size="large" />
+                      <Text style={styles.audioLoadingText}>{uploadMessage}</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity 
+                      style={[styles.modalBtn, { width: '100%', backgroundColor: '#10B981' }]} 
+                      onPress={submitVoiceToServer} 
+                    >
+                      <Text style={styles.modalBtnText}>✨ Générer ma voix magique</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
+          </View>
+        </Modal>
+
+        {/* Modal para renombrar voz */}
+        <Modal visible={showRenameModal} animationType="fade" transparent>
+          <View style={styles.renameOverlay}>
+            <View style={styles.renameContent}>
+              <Text style={styles.renameTitle}>Renommer la voix</Text>
+              <Text style={styles.renameSubtitle}>Choisissez un nouveau nom.</Text>
+              
+              <TextInput
+                style={styles.renameInput}
+                value={renameValue}
+                onChangeText={setRenameValue}
+                placeholder="Ex. Papa"
+                placeholderTextColor="#64748B"
+                autoFocus
+              />
+
+              <View style={styles.renameActions}>
+                <TouchableOpacity 
+                  style={styles.renameCancelBtn} 
+                  onPress={() => {
+                    setShowRenameModal(false);
+                    setVoiceToRename(null);
+                  }}
+                >
+                  <Text style={styles.renameCancelText}>Annuler</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.renameSaveBtn, renameValue.trim().length < 2 && { opacity: 0.5 }]}
+                  disabled={renameValue.trim().length < 2}
+                  onPress={handleRenameSave}
+                >
+                  <Text style={styles.renameSaveText}>Enregistrer</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* NUEVO PAYWALL PREMIUM */}
+        <Modal visible={showPaywall} animationType="slide" transparent>
+          <View style={styles.pwOverlay}>
+            <View style={styles.pwContent}>
+              <TouchableOpacity style={styles.pwClose} onPress={() => setShowPaywall(false)}>
+                <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>✕</Text>
+              </TouchableOpacity>
+
+              <Text style={{ fontSize: 55, marginBottom: 10 }}>✨</Text>
+              <Text style={styles.pwTitle}>Passez au Premium</Text>
+              <Text style={styles.pwSub}>
+                Débloquez la magie illimitée !{'\n'}• Histoires à l'infini{'\n'}• Clonez votre propre voix{'\n'}• Accès à toutes les voix magiques
+              </Text>
+
+              {packages.length > 0 ? (
+                packages.map((pkg) => (
+                  <TouchableOpacity
+                    key={pkg.identifier}
+                    style={styles.pwBtnPremium}
+                    onPress={() => purchasePackage(pkg)}
+                    disabled={isPurchasing}
+                  >
+                    {isPurchasing ? (
+                      <ActivityIndicator color="#FFF" />
+                    ) : (
+                      <>
+                        <Text style={styles.pwBtnPremiumTitle}>
+                           {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
+                        </Text>
+                        <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={{ marginTop: 20, alignItems: 'center' }}>
+                  <ActivityIndicator color="#FCD34D" size="large" />
+                  <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
+                  <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F172A', paddingTop: 60 },
+  safeArea: { flex: 1, backgroundColor: '#0F172A' },
+  container: { flex: 1, backgroundColor: '#0F172A' },
   headerTitle: { fontSize: 34, fontWeight: '900', color: '#FCD34D', textAlign: 'center', marginBottom: 20 },
   scrollContent: { paddingHorizontal: 20, paddingBottom: 150 },
   heroCard: { backgroundColor: '#1E293B', padding: 24, borderRadius: 24, borderWidth: 1, borderColor: '#334155', marginBottom: 20 },
@@ -719,7 +723,6 @@ const styles = StyleSheet.create({
   voiceModalSubtitle: { color: '#CBD5E1', fontSize: 15, textAlign: 'center', marginBottom: 10, lineHeight: 22 },
   voiceModalWarning: { color: '#94A3B8', fontSize: 12, textAlign: 'center', marginBottom: 25, fontStyle: 'italic' },
   
-  // NUEVO ESTILO PARA EL AVISO EN ROJO
   scriptWarning: { color: '#EF4444', fontSize: 14, fontWeight: '800', textAlign: 'center', marginBottom: 15, lineHeight: 22, paddingHorizontal: 10 },
   
   inputContainer: { backgroundColor: '#1E293B', borderRadius: 16, borderWidth: 1, borderColor: '#334155', paddingHorizontal: 15 },

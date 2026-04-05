@@ -465,7 +465,7 @@ export default function BibliotecaScreen() {
         <FlatList
           data={filteredLibrary}
           keyExtractor={(i, index) => i?.id?.toString?.() || String(index)}
-          contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           renderItem={renderCard}
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -584,6 +584,7 @@ export default function BibliotecaScreen() {
           </View>
         </Modal>
 
+        {/* NUEVO PAYWALL PREMIUM - CUMPLE POLÍTICAS DE GOOGLE PLAY */}
         <Modal visible={showPaywall} animationType="slide" transparent>
           <View style={styles.pwOverlay}>
             <View style={styles.pwContent}>
@@ -598,34 +599,42 @@ export default function BibliotecaScreen() {
               </Text>
 
               {packages.length > 0 ? (
-                packages.map((pkg) => (
-                  <TouchableOpacity
-                    key={pkg.identifier}
-                    style={styles.pwBtnPremium}
-                    onPress={() => purchasePackage(pkg)}
-                    disabled={isPurchasing}
-                  >
-                    {isPurchasing ? (
-                      <ActivityIndicator color="#FFF" />
-                    ) : (
-                      <>
-                        <Text style={styles.pwBtnPremiumTitle}>
-                          {pkg.packageType === 'MONTHLY' ? '🎁 Essai gratuit' : '🚀 Plan Annuel'}
-                        </Text>
-                        <Text style={styles.pwBtnPremiumPrice}>Puis {pkg.product.priceString}</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                ))
+                packages.map((pkg) => {
+                  const planName = pkg.product.title || (pkg.packageType === 'MONTHLY' ? 'Abonnement Mensuel' : 'Abonnement Annuel');
+                  
+                  return (
+                    <TouchableOpacity
+                      key={pkg.identifier}
+                      style={styles.pwBtnPremium}
+                      onPress={() => purchasePackage(pkg)}
+                      disabled={isPurchasing}
+                    >
+                      {isPurchasing ? (
+                        <ActivityIndicator color="#FFF" />
+                      ) : (
+                        <>
+                          <Text style={styles.pwBtnPremiumTitle}>{planName}</Text>
+                          <Text style={styles.pwBtnPremiumPrice}>{pkg.product.priceString}</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
               ) : (
                 <View style={{ marginTop: 20, alignItems: 'center' }}>
                   <ActivityIndicator color="#FCD34D" size="large" />
-                  <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des meilleures offres...</Text>
+                  <Text style={{ color: '#94A3B8', marginTop: 15, textAlign: 'center' }}>Recherche des offres...</Text>
                   <TouchableOpacity style={{ marginTop: 20, paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#334155', borderRadius: 12 }} onPress={loadOfferings}>
                     <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Réessayer</Text>
                   </TouchableOpacity>
                 </View>
               )}
+
+              {/* TEXTO LEGAL OBLIGATORIO PARA GOOGLE PLAY */}
+              <Text style={styles.pwDisclaimer}>
+                Renouvellement automatique. Le paiement sera traité par Google Play. Vous pouvez annuler à tout moment dans les paramètres de vos abonnements Google Play.
+              </Text>
+
             </View>
           </View>
         </Modal>
@@ -699,6 +708,7 @@ const styles = StyleSheet.create({
   pwTitle: { color: '#FFF', fontSize: 26, fontWeight: '900', textAlign: 'center' },
   pwSub: { color: '#CBD5E1', textAlign: 'center', marginVertical: 20, lineHeight: 24, fontSize: 15 },
   pwBtnPremium: { backgroundColor: '#8B5CF6', width: '100%', padding: 20, borderRadius: 20, alignItems: 'center', marginBottom: 12, shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
-  pwBtnPremiumTitle: { color: '#FFF', fontWeight: '900', fontSize: 18 },
-  pwBtnPremiumPrice: { color: '#E2E8F0', marginTop: 4, fontSize: 14, fontWeight: '600' },
+  pwBtnPremiumTitle: { color: '#FFF', fontWeight: '800', fontSize: 16, marginBottom: 4 },
+  pwBtnPremiumPrice: { color: '#FCD34D', fontSize: 16, fontWeight: '900' },
+  pwDisclaimer: { color: '#94A3B8', fontSize: 11, textAlign: 'center', marginTop: 15, lineHeight: 16 },
 });

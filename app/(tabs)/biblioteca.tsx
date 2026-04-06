@@ -584,7 +584,7 @@ export default function BibliotecaScreen() {
           </View>
         </Modal>
 
-        {/* NUEVO PAYWALL PREMIUM - CUMPLE POLÍTICAS DE GOOGLE PLAY */}
+        {/* NUEVO PAYWALL PREMIUM - ORDENADO Y CUMPLE POLÍTICAS */}
         <Modal visible={showPaywall} animationType="slide" transparent>
           <View style={styles.pwOverlay}>
             <View style={styles.pwContent}>
@@ -599,8 +599,12 @@ export default function BibliotecaScreen() {
               </Text>
 
               {packages.length > 0 ? (
-                packages.map((pkg) => {
-                  const planName = pkg.product.title || (pkg.packageType === 'MONTHLY' ? 'Abonnement Mensuel' : 'Abonnement Annuel');
+                [...packages]
+                .sort((a, b) => (a.packageType === 'ANNUAL' ? -1 : 1)) // <-- Mueve el anual SIEMPRE arriba
+                .map((pkg) => {
+                  const isAnnual = pkg.packageType === 'ANNUAL';
+                  const planName = isAnnual ? '🚀 Annuel — Meilleure offre' : '📅 Mensuel';
+                  const marketingText = isAnnual ? '  •  économisez 58%' : ' / mois';
                   
                   return (
                     <TouchableOpacity
@@ -614,7 +618,10 @@ export default function BibliotecaScreen() {
                       ) : (
                         <>
                           <Text style={styles.pwBtnPremiumTitle}>{planName}</Text>
-                          <Text style={styles.pwBtnPremiumPrice}>{pkg.product.priceString}</Text>
+                          <Text style={styles.pwBtnPremiumPrice}>
+                            {pkg.product.priceString}
+                            <Text style={{fontSize: 13, color: '#E2E8F0', fontWeight: 'normal'}}>{marketingText}</Text>
+                          </Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -638,6 +645,7 @@ export default function BibliotecaScreen() {
             </View>
           </View>
         </Modal>
+
       </View>
     </SafeAreaView>
   );

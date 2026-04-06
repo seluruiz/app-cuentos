@@ -642,11 +642,9 @@ export default function HomeScreen() {
             <Text style={styles.label}>VOTRE IDÉE D'HISTOIRE</Text>
             <View style={[styles.inputContainer, styles.storyInputContainer]}>
               <Text style={styles.inputIcon}>✍️</Text>
-              {/* NUEVO PLACEHOLDER INSPIRADOR */}
               <TextInput style={[styles.input, styles.storyInput]} placeholder="Ex: Lucas a peur de l'eau, mais Spiderman l'aide à nager..." placeholderTextColor="#64748B" multiline value={historia} onChangeText={setHistoria} textAlignVertical="top" maxLength={600} />
             </View>
 
-            {/* NUEVA FRASE DE AYUDA DEBAJO DE LA CAJA */}
             <Text style={styles.storyHint}>
               Soyez créatif ! Plus vous donnez de détails, meilleur sera le conte. Ajoutez ses héros préférés de dessins animés ou de films, une émotion douce ou une petite aventure.
             </Text>
@@ -689,7 +687,6 @@ export default function HomeScreen() {
               <Text style={styles.storyMeta}>{currentStory.childName} · {currentStory.childAge} ans · {currentStory.dateLabel}</Text>
               <Text style={styles.narratorBadge}>🎙️ Narré par : {currentStory.narratorName}</Text>
 
-              {/* REPRODUCTOR O MENSAJE DE CARGA */}
               {creatingAudio ? (
                 <View style={styles.audioLoadingContainer}>
                   <ActivityIndicator color="#10B981" size="large" />
@@ -728,7 +725,6 @@ export default function HomeScreen() {
                   </TouchableOpacity>
                 </View>
               )}
-              {/* FIN REPRODUCTOR */}
               
               <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/biblioteca')} activeOpacity={0.9}>
                 <Text style={styles.secondaryButtonText}>Voir dans la bibliothèque 📚</Text>
@@ -743,7 +739,7 @@ export default function HomeScreen() {
           )}
         </ScrollView>
 
-        {/* NUEVO PAYWALL PREMIUM - CUMPLE POLÍTICAS DE GOOGLE PLAY */}
+        {/* NUEVO PAYWALL PREMIUM - ORDENADO Y CUMPLE POLÍTICAS */}
         <Modal visible={showPaywall} animationType="slide" transparent>
           <View style={styles.pwOverlay}>
             <View style={styles.pwContent}>
@@ -758,8 +754,12 @@ export default function HomeScreen() {
               </Text>
 
               {packages.length > 0 ? (
-                packages.map((pkg) => {
-                  const planName = pkg.product.title || (pkg.packageType === 'MONTHLY' ? 'Abonnement Mensuel' : 'Abonnement Annuel');
+                [...packages]
+                .sort((a, b) => (a.packageType === 'ANNUAL' ? -1 : 1)) // <-- Mueve el anual SIEMPRE arriba
+                .map((pkg) => {
+                  const isAnnual = pkg.packageType === 'ANNUAL';
+                  const planName = isAnnual ? '🚀 Annuel — Meilleure offre' : '📅 Mensuel';
+                  const marketingText = isAnnual ? '  •  économisez 58%' : ' / mois';
                   
                   return (
                     <TouchableOpacity
@@ -773,7 +773,10 @@ export default function HomeScreen() {
                       ) : (
                         <>
                           <Text style={styles.pwBtnPremiumTitle}>{planName}</Text>
-                          <Text style={styles.pwBtnPremiumPrice}>{pkg.product.priceString}</Text>
+                          <Text style={styles.pwBtnPremiumPrice}>
+                            {pkg.product.priceString}
+                            <Text style={{fontSize: 13, color: '#E2E8F0', fontWeight: 'normal'}}>{marketingText}</Text>
+                          </Text>
                         </>
                       )}
                     </TouchableOpacity>
